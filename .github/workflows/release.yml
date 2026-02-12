@@ -2,11 +2,14 @@ name: build-and-release
 
 on:
   workflow_dispatch:
+    inputs:
+      ref:
+        description: "Tag or branch to build (e.g. v0.1.5 or main)"
+        required: true
+        default: "main"
   push:
-    branches:
-      - main
-    tags:
-      - "v*"
+    branches: [main]
+    tags: ["v*"]
 
 permissions:
   contents: write
@@ -14,6 +17,7 @@ permissions:
 
 jobs:
   build:
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -23,9 +27,18 @@ jobs:
 
     runs-on: ${{ matrix.platform }}
 
+    # Normalize the selected ref and compute whether we should do tag-only steps
+    env:
+      CI: true
+      CARGO_TERM_PROGRESS_WHEN: never
+      BUILD_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref_name }}
+      IS_TAG_BUILD: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || (github.event_name == 'workflow_dispatch' && startsWith(inputs.ref, 'v')) }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BUILD_REF }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -46,7 +59,7 @@ jobs:
       # WINDOWS SIGNING SECTION
       # ---------------------------
       - name: Azure Login (OIDC)
-        if: matrix.platform == 'windows-latest' && startsWith(github.ref, 'refs/tags/')
+        if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -54,7 +67,7 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Install Artifact Signing Tools
-        if: matrix.platform == 'windows-latest' && startsWith(github.ref, 'refs/tags/')
+        if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
         shell: pwsh
         run: |
           winget source update
@@ -65,7 +78,7 @@ jobs:
             --disable-interactivity
 
       - name: Create metadata.json
-        if: matrix.platform == 'windows-latest' && startsWith(github.ref, 'refs/tags/')
+        if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
         shell: pwsh
         run: |
           @'
@@ -77,10 +90,18 @@ jobs:
           '@ | Out-File metadata.json -Encoding utf8
 
       - name: Sign MSI and EXE
-        if: matrix.platform == 'windows-latest' && startsWith(github.ref, 'refs/tags/')
+        if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
         shell: pwsh
         run: |
-          $files = Get-ChildItem -Recurse -Include *.msi,*.exe
+          $bundle = Join-Path $env:GITHUB_WORKSPACE "src-tauri\target\release\bundle"
+          $files = Get-ChildItem -Recurse $bundle -Include *.msi,*.exe -ErrorAction SilentlyContinue
+
+          if (-not $files) {
+            Write-Host "No MSI/EXE found under: $bundle"
+            Get-ChildItem -Recurse "src-tauri\target\release" -ErrorAction SilentlyContinue | Select-Object FullName
+            exit 1
+          }
+
           foreach ($file in $files) {
             Write-Host "Signing $($file.FullName)"
             signtool.exe sign `
@@ -93,15 +114,15 @@ jobs:
           }
 
       # ---------------------------
-      # NOW CREATE RELEASE
+      # NOW CREATE RELEASE (tag builds only)
       # ---------------------------
       - name: Upload Release Assets
-        if: startsWith(github.ref, 'refs/tags/')
+        if: env.IS_TAG_BUILD == 'true'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: "AttentionScreen ${{ github.ref_name }}"
+          tagName: ${{ env.BUILD_REF }}
+          releaseName: "AttentionScreen ${{ env.BUILD_REF }}"
           releaseDraft: true
           prerelease: false
