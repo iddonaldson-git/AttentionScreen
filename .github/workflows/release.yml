@@ -57,19 +57,24 @@ jobs:
         if: matrix.platform == 'windows-latest' && startsWith(github.ref, 'refs/tags/')
         shell: pwsh
         run: |
-          winget install -e --id Microsoft.Azure.ArtifactSigningClientTools
+          winget source update
+          winget install -e --id Microsoft.Azure.ArtifactSigningClientTools `
+            --source winget `
+            --accept-source-agreements `
+            --accept-package-agreements `
+            --disable-interactivity
 
       - name: Create metadata.json
         if: matrix.platform == 'windows-latest' && startsWith(github.ref, 'refs/tags/')
         shell: pwsh
         run: |
-          @"
+          @'
           {
             "Endpoint": "https://eastus.codesigning.azure.net",
             "CodeSigningAccountName": "attentionscreen-signing",
             "CertificateProfileName": "attentionscreen-profile"
           }
-          "@ | Out-File metadata.json -Encoding utf8
+          '@ | Out-File metadata.json -Encoding utf8
 
       - name: Sign MSI and EXE
         if: matrix.platform == 'windows-latest' && startsWith(github.ref, 'refs/tags/')
