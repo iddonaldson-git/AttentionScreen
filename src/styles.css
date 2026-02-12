@@ -1,0 +1,89 @@
+:root {
+  font-family: -apple-system, system-ui, Inter, Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+
+  --bg: #3F8690;
+  --text: #E9A90B;
+}
+
+/* Full height + transparent webview background for transparent window */
+html, body {
+  height: 100%;
+  margin: 0;
+  background: transparent;
+}
+
+/* Draw the real background behind everything */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: -1;
+}
+
+body {
+  color: var(--text);
+  overflow: hidden;
+}
+
+/* Layout */
+.wrap {
+  height: 100%;
+  padding-top: 36px; /* matches dragbar height */
+  padding-left: 48px;
+  padding-right: 48px;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Billboard text */
+.message {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: center;
+}
+
+#msg-primary {
+  font-size: clamp(48px, 10vw, 120px);
+  font-weight: 900;
+  line-height: 1.05;
+  color: var(--text);
+  outline: none;
+}
+
+#msg-secondary {
+  font-size: clamp(32px, 6vw, 72px);
+  font-weight: 700;
+  color: white;
+  opacity: 0.95;
+  outline: none;
+}
+
+/* Drag strip */
+#dragbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 36px;
+  width: 100%;
+  z-index: 2147483647;
+
+  cursor: grab;
+  user-select: none;
+
+  /* debug color, remove when confirmed */
+  /* background: rgba(255, 0, 0, 0.2); */
+}
+#dragbar:active { cursor: grabbing; }
+
+#msg-primary,
+#msg-secondary {
+  text-shadow: 0 4px 20px rgba(0,0,0,0.25);
+}
