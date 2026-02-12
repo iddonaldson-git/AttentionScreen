@@ -60,6 +60,9 @@ jobs:
       # WINDOWS SIGNING (TAG BUILDS ONLY) - AZURE CODE SIGNING
       # =====================================================
 
+      - name: Print Azure Client ID
+        run: echo "${{ secrets.AZURE_CLIENT_ID }}"
+
       - name: Azure Login (OIDC)
         if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
         uses: azure/login@v2
