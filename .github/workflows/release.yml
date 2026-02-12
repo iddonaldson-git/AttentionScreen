@@ -7,6 +7,7 @@ on:
         description: "Tag or branch to build (e.g. v0.1.5 or main)"
         required: true
         default: "main"
+
   push:
     branches: [main]
     tags: ["v*"]
@@ -18,6 +19,7 @@ permissions:
 jobs:
   build:
     timeout-minutes: 20
+
     strategy:
       fail-fast: false
       matrix:
@@ -27,7 +29,7 @@ jobs:
 
     runs-on: ${{ matrix.platform }}
 
-    # Normalize the selected ref and compute whether we should do tag-only steps
+    # Normalize selected ref + detect tag builds
     env:
       CI: true
       CARGO_TERM_PROGRESS_WHEN: never
@@ -35,11 +37,17 @@ jobs:
       IS_TAG_BUILD: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || (github.event_name == 'workflow_dispatch' && startsWith(inputs.ref, 'v')) }}
 
     steps:
+      # ---------------------------
+      # CHECKOUT
+      # ---------------------------
       - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ env.BUILD_REF }}
 
+      # ---------------------------
+      # SETUP
+      # ---------------------------
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -52,15 +60,16 @@ jobs:
       - name: Install frontend deps
         run: npm ci
 
+      # ---------------------------
+      # BUILD TAURI
+      # ---------------------------
       - name: Build Tauri App
         run: npm run tauri build
 
-      # ---------------------------
-      # WINDOWS SIGNING SECTION
-      # ---------------------------
-            # ---------------------------
-      # WINDOWS SIGNING SECTION (NO WINGET)
-      # ---------------------------
+      # =====================================================
+      # WINDOWS SIGNING (TAG BUILDS ONLY)
+      # =====================================================
+
       - name: Azure Login (OIDC)
         if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
         uses: azure/login@v2
@@ -81,14 +90,25 @@ jobs:
         run: |
           dotnet tool install --global AzureSignTool
 
+      # IMPORTANT: ensure dotnet tools are on PATH
+      - name: Add dotnet tools to PATH
+        if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
+        shell: pwsh
+        run: |
+          echo "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
       - name: Sign MSI and EXE (Azure Code Signing)
         if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
         shell: pwsh
-        env:
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
         run: |
           $bundle = Join-Path $env:GITHUB_WORKSPACE "src-tauri\target\release\bundle"
+
+          if (-not (Test-Path $bundle)) {
+            Write-Host "Bundle folder not found: $bundle"
+            Get-ChildItem -Recurse "src-tauri\target\release" -ErrorAction SilentlyContinue | Select-Object FullName
+            exit 1
+          }
+
           $files = Get-ChildItem -Recurse $bundle -Include *.msi,*.exe -ErrorAction SilentlyContinue
 
           if (-not $files) {
@@ -99,7 +119,7 @@ jobs:
           foreach ($file in $files) {
             Write-Host "Signing $($file.FullName)"
 
-            AzureSignTool sign `
+            azuresigntool sign `
               -kvu "https://eastus.codesigning.azure.net/" `
               -kvi "attentionscreen-signing" `
               -kvc "attentionscreen-profile" `
@@ -109,9 +129,8 @@ jobs:
               "$($file.FullName)"
           }
 
-
       # ---------------------------
-      # NOW CREATE RELEASE (tag builds only)
+      # CREATE RELEASE (TAG BUILDS)
       # ---------------------------
       - name: Upload Release Assets
         if: env.IS_TAG_BUILD == 'true'
