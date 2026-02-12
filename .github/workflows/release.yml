@@ -29,7 +29,6 @@ jobs:
 
     runs-on: ${{ matrix.platform }}
 
-    # Normalize selected ref + detect tag builds
     env:
       CI: true
       CARGO_TERM_PROGRESS_WHEN: never
@@ -37,17 +36,11 @@ jobs:
       IS_TAG_BUILD: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || (github.event_name == 'workflow_dispatch' && startsWith(inputs.ref, 'v')) }}
 
     steps:
-      # ---------------------------
-      # CHECKOUT
-      # ---------------------------
       - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ env.BUILD_REF }}
 
-      # ---------------------------
-      # SETUP
-      # ---------------------------
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -60,14 +53,11 @@ jobs:
       - name: Install frontend deps
         run: npm ci
 
-      # ---------------------------
-      # BUILD TAURI
-      # ---------------------------
       - name: Build Tauri App
         run: npm run tauri build
 
       # =====================================================
-      # WINDOWS SIGNING (TAG BUILDS ONLY)
+      # WINDOWS SIGNING (TAG BUILDS ONLY) - AZURE CODE SIGNING
       # =====================================================
 
       - name: Azure Login (OIDC)
@@ -90,39 +80,67 @@ jobs:
         run: |
           dotnet tool install --global AzureSignTool
 
-      # IMPORTANT: ensure dotnet tools are on PATH
       - name: Add dotnet tools to PATH
         if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
         shell: pwsh
         run: |
           echo "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
+          - name: Debug Secret Presence
+          shell: pwsh
+          env:
+            ACS_ENDPOINT: ${{ secrets.ACS_ENDPOINT }}
+          run: |
+            if ([string]::IsNullOrEmpty($env:ACS_ENDPOINT)) {
+              Write-Host "ACS_ENDPOINT missing"
+            } else {
+              Write-Host "ACS_ENDPOINT present"
+            }
+              
       - name: Sign MSI and EXE (Azure Code Signing)
         if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
         shell: pwsh
+        env:
+          ACS_ENDPOINT: ${{ secrets.ACS_ENDPOINT }}   # e.g. https://eastus.codesigning.azure.net/
+          ACS_ACCOUNT:  ${{ secrets.ACS_ACCOUNT }}    # e.g. attentionscreen-signing
+          ACS_PROFILE:  ${{ secrets.ACS_PROFILE }}    # e.g. attentionscreen-profile
         run: |
+          # Fail fast if any are missing (does not print values)
+          $missing = @()
+          foreach ($n in @("ACS_ENDPOINT","ACS_ACCOUNT","ACS_PROFILE")) {
+            if ([string]::IsNullOrEmpty($env:$n)) { $missing += $n }
+          }
+          if ($missing.Count -gt 0) {
+            Write-Error "Missing secrets at runtime: $($missing -join ', ')"
+            exit 1
+          }
+
           $bundle = Join-Path $env:GITHUB_WORKSPACE "src-tauri\target\release\bundle"
 
           if (-not (Test-Path $bundle)) {
-            Write-Host "Bundle folder not found: $bundle"
+            Write-Error "Bundle folder not found: $bundle"
             Get-ChildItem -Recurse "src-tauri\target\release" -ErrorAction SilentlyContinue | Select-Object FullName
             exit 1
           }
 
-          $files = Get-ChildItem -Recurse $bundle -Include *.msi,*.exe -ErrorAction SilentlyContinue
+          # Only sign actual installers
+          $targets = @()
+          $targets += Get-ChildItem -Path $bundle -Recurse -Filter "*.msi" -ErrorAction SilentlyContinue
+          $targets += Get-ChildItem -Path $bundle -Recurse -Filter "*setup*.exe" -ErrorAction SilentlyContinue
+          $targets = $targets | Sort-Object FullName -Unique
 
-          if (-not $files) {
-            Write-Host "No MSI/EXE found under: $bundle"
+          if ($targets.Count -eq 0) {
+            Write-Error "No MSI or setup EXE found under: $bundle"
             exit 1
           }
 
-          foreach ($file in $files) {
+          foreach ($file in $targets) {
             Write-Host "Signing $($file.FullName)"
 
-            azuresigntool sign `
-              -kvu "https://eastus.codesigning.azure.net/" `
-              -kvi "attentionscreen-signing" `
-              -kvc "attentionscreen-profile" `
+            AzureSignTool sign `
+              -kvu "$env:ACS_ENDPOINT" `
+              -kvi "$env:ACS_ACCOUNT" `
+              -kvc "$env:ACS_PROFILE" `
               -tr "http://timestamp.acs.microsoft.com" `
               -td sha256 `
               -fd sha256 `
