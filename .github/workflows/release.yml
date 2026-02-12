@@ -86,16 +86,16 @@ jobs:
         run: |
           echo "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-          - name: Debug Secret Presence
-          shell: pwsh
-          env:
-            ACS_ENDPOINT: ${{ secrets.ACS_ENDPOINT }}
-          run: |
-            if ([string]::IsNullOrEmpty($env:ACS_ENDPOINT)) {
-              Write-Host "ACS_ENDPOINT missing"
-            } else {
-              Write-Host "ACS_ENDPOINT present"
-            }
+      - name: Debug Secret Presence
+        shell: pwsh
+        env:
+          ACS_ENDPOINT: ${{ secrets.ACS_ENDPOINT }}
+        run: |
+          if ([string]::IsNullOrEmpty($env:ACS_ENDPOINT)) {
+            Write-Host "ACS_ENDPOINT missing"
+          } else {
+            Write-Host "ACS_ENDPOINT present"
+          }
               
       - name: Sign MSI and EXE (Azure Code Signing)
         if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
