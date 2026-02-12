@@ -58,6 +58,9 @@ jobs:
       # ---------------------------
       # WINDOWS SIGNING SECTION
       # ---------------------------
+            # ---------------------------
+      # WINDOWS SIGNING SECTION (NO WINGET)
+      # ---------------------------
       - name: Azure Login (OIDC)
         if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
         uses: azure/login@v2
@@ -66,52 +69,46 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Install Artifact Signing Tools
+      - name: Setup .NET
+        if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Install AzureSignTool
         if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
         shell: pwsh
         run: |
-          winget source update
-          winget install -e --id Microsoft.Azure.ArtifactSigningClientTools `
-            --source winget `
-            --accept-source-agreements `
-            --accept-package-agreements `
-            --disable-interactivity
+          dotnet tool install --global AzureSignTool
 
-      - name: Create metadata.json
+      - name: Sign MSI and EXE (Azure Code Signing)
         if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
         shell: pwsh
-        run: |
-          @'
-          {
-            "Endpoint": "https://eastus.codesigning.azure.net",
-            "CodeSigningAccountName": "attentionscreen-signing",
-            "CertificateProfileName": "attentionscreen-profile"
-          }
-          '@ | Out-File metadata.json -Encoding utf8
-
-      - name: Sign MSI and EXE
-        if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
-        shell: pwsh
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
         run: |
           $bundle = Join-Path $env:GITHUB_WORKSPACE "src-tauri\target\release\bundle"
           $files = Get-ChildItem -Recurse $bundle -Include *.msi,*.exe -ErrorAction SilentlyContinue
 
           if (-not $files) {
             Write-Host "No MSI/EXE found under: $bundle"
-            Get-ChildItem -Recurse "src-tauri\target\release" -ErrorAction SilentlyContinue | Select-Object FullName
             exit 1
           }
 
           foreach ($file in $files) {
             Write-Host "Signing $($file.FullName)"
-            signtool.exe sign `
-              /fd SHA256 `
-              /tr "http://timestamp.acs.microsoft.com" `
-              /td SHA256 `
-              /dlib "C:\Program Files\Microsoft Azure Code Signing Client Tools\Azure.CodeSigning.Dlib.dll" `
-              /dmdf metadata.json `
+
+            AzureSignTool sign `
+              -kvu "https://eastus.codesigning.azure.net/" `
+              -kvi "attentionscreen-signing" `
+              -kvc "attentionscreen-profile" `
+              -tr "http://timestamp.acs.microsoft.com" `
+              -td sha256 `
+              -fd sha256 `
               "$($file.FullName)"
           }
+
 
       # ---------------------------
       # NOW CREATE RELEASE (tag builds only)
