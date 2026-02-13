@@ -75,6 +75,16 @@ jobs:
           Invoke-WebRequest -Uri https://aka.ms/trustedsigningclient -OutFile TrustedSigningClient.msi
           Start-Process msiexec.exe -ArgumentList "/i TrustedSigningClient.msi /quiet /norestart" -Wait
 
+      - name: Install SignTool (Windows SDK)
+        if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
+        shell: pwsh
+        run: |
+          choco install windows-sdk-10.1 -y --no-progress
+          # Refresh PATH for this session
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" +
+                      [System.Environment]::GetEnvironmentVariable("Path","User")
+          where.exe signtool
+          
       - name: Sign MSI and EXE (Azure Trusted Signing)
         if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
         shell: pwsh

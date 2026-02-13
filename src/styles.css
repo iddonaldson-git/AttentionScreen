@@ -103,3 +103,118 @@ body {
 #msg-secondary {
   text-shadow: 0 4px 20px rgba(0,0,0,0.25);
 }
+
+
+
+:root {
+  /* your PCC palette vars here */
+  /* --pcc-turquose: #008EAA; etc... */
+
+  /* theme slots controlled by the dropdown */
+  --app-bg: var(--pcc-navy);
+  --app-text: #ffffff;
+}
+
+body {
+  margin: 0;
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
+/* Panel styling for the dropdown UI */
+.theme-panel {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 9999;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in oklab, var(--app-text), transparent 80%);
+  background: color-mix(in oklab, var(--app-bg), white 10%);
+  backdrop-filter: blur(10px);
+}
+
+.theme-label {
+  display: grid;
+  gap: 6px;
+  font-size: 12.5px;
+}
+
+.theme-select {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in oklab, var(--app-text), transparent 80%);
+  background: color-mix(in oklab, var(--app-bg), white 14%);
+  color: var(--app-text);
+  outline: none;
+}
+
+.theme-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.theme-pill {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--app-text), transparent 80%);
+  background: color-mix(in oklab, var(--app-bg), white 12%);
+  font-size: 12.5px;
+}
+
+.theme-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--app-text), transparent 75%);
+  background: var(--app-text);
+}
+
+.theme-dot.bg {
+  background: var(--app-bg);
+}
+
+.theme-status {
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--app-text), transparent 80%);
+  font-size: 12.5px;
+}
+
+.theme-status.pass {
+  background: rgba(40, 180, 99, 0.18);
+}
+
+.theme-status.fail {
+  background: rgba(231, 76, 60, 0.18);
+}
+
+.theme-btn {
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in oklab, var(--app-text), transparent 80%);
+  background: color-mix(in oklab, var(--app-bg), white 16%);
+  color: var(--app-text);
+  cursor: pointer;
+}
+
+/* Your existing layout can stay, but note the fixed panel sits on top */
+.wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding-top: 84px; /* gives space so panel doesn't overlap content */
+}
+
+.message #msg-primary,
+.message #msg-secondary {
+  outline: none;
+}
