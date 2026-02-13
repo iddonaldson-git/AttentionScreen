@@ -68,68 +68,65 @@ jobs:
           tenant-id: 049ec3b5-40f7-47b6-ae95-2f7a19c28a28
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Setup .NET
-        if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "8.0.x"
-
-      - name: Install AzureSignTool
+      - name: Install Trusted Signing Client Tools
         if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
         shell: pwsh
         run: |
-          dotnet tool install --global AzureSignTool
-
-      - name: Add dotnet tools to PATH
-        if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
-        shell: pwsh
-        run: |
-          echo "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
-      - name: Debug Secret Presence (no secret output)
-        if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
-        shell: pwsh
-        env:
-          ACS_ENDPOINT: ${{ secrets.ACS_ENDPOINT }}
-          ACS_ACCOUNT:  ${{ secrets.ACS_ACCOUNT }}
-          ACS_PROFILE:  ${{ secrets.ACS_PROFILE }}
-        run: |
-          foreach ($n in @("ACS_ENDPOINT","ACS_ACCOUNT","ACS_PROFILE")) {
-            $val = [Environment]::GetEnvironmentVariable($n)
-            if ([string]::IsNullOrWhiteSpace($val)) {
-              Write-Host "$n missing"
-            } else {
-              Write-Host "$n present"
-            }
-          }
+          # Winget is available on windows-latest; installs the client tools that include Azure.CodeSigning.Dlib.dll
+          winget --version
+          winget install --id Microsoft.TrustedSigningClientTools -e --accept-source-agreements --accept-package-agreements
 
       - name: Sign MSI and EXE (Azure Trusted Signing)
         if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
         shell: pwsh
         env:
-          ACS_ENDPOINT: ${{ secrets.ACS_ENDPOINT }}   # e.g. https://eastus.codesigning.azure.net/
-          ACS_ACCOUNT:  ${{ secrets.ACS_ACCOUNT }}    # e.g. attentionscreen-signing
-          ACS_PROFILE:  ${{ secrets.ACS_PROFILE }}    # e.g. attentionscreen-profile
+          ACS_ENDPOINT: ${{ secrets.ACS_ENDPOINT }}   # e.g. https://eus.codesigning.azure.net
+          ACS_ACCOUNT:  ${{ secrets.ACS_ACCOUNT }}    # CodeSigningAccountName
+          ACS_PROFILE:  ${{ secrets.ACS_PROFILE }}    # CertificateProfileName
         run: |
           # Fail fast if required ACS vars are missing (does not print values)
           $missing = @()
           foreach ($n in @("ACS_ENDPOINT","ACS_ACCOUNT","ACS_PROFILE")) {
-            $val = [Environment]::GetEnvironmentVariable($n)
-            if ([string]::IsNullOrWhiteSpace($val)) { $missing += $n }
+            if ([string]::IsNullOrWhiteSpace($env:$n)) { $missing += $n }
           }
           if ($missing.Count -gt 0) {
             Write-Error "Missing secrets at runtime: $($missing -join ', ')"
             exit 1
           }
 
-          # Ensure tool is available (works whether command is AzureSignTool or azuresigntool)
-          $tool = Get-Command AzureSignTool -ErrorAction SilentlyContinue
-          if (-not $tool) { $tool = Get-Command azuresigntool -ErrorAction SilentlyContinue }
-          if (-not $tool) {
-            Write-Error "AzureSignTool not found on PATH (dotnet tool install may have failed)."
+          # Locate signtool.exe (Windows SDK)
+          $signtool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter signtool.exe -ErrorAction SilentlyContinue |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1 -ExpandProperty FullName
+
+          if (-not $signtool) {
+            Write-Error "signtool.exe not found under Windows Kits."
             exit 1
           }
-          $toolName = $tool.Name
+          Write-Host "Using signtool: $signtool"
+
+          # Locate Azure.CodeSigning.Dlib.dll from Trusted Signing Client Tools install
+          $dlib = Get-ChildItem "C:\Program Files" -Recurse -Filter Azure.CodeSigning.Dlib.dll -ErrorAction SilentlyContinue |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1 -ExpandProperty FullName
+
+          if (-not $dlib) {
+            Write-Error "Azure.CodeSigning.Dlib.dll not found. Trusted Signing Client Tools may not have installed correctly."
+            exit 1
+          }
+          Write-Host "Using dlib: $dlib"
+
+          # Create metadata.json required by Trusted Signing
+          $metaPath = Join-Path $env:RUNNER_TEMP "metadata.json"
+          $meta = @{
+            Endpoint = $env:ACS_ENDPOINT
+            CodeSigningAccountName = $env:ACS_ACCOUNT
+            CertificateProfileName = $env:ACS_PROFILE
+            CorrelationId = $env:GITHUB_RUN_ID
+          } | ConvertTo-Json
+
+          $meta | Out-File -FilePath $metaPath -Encoding utf8
+          Write-Host "Wrote metadata: $metaPath"
 
           $bundle = Join-Path $env:GITHUB_WORKSPACE "src-tauri\target\release\bundle"
           if (-not (Test-Path $bundle)) {
@@ -138,7 +135,7 @@ jobs:
             exit 1
           }
 
-          # Only sign actual installers
+          # Find Windows installers produced by Tauri
           $targets = @()
           $targets += Get-ChildItem -Path $bundle -Recurse -Filter "*.msi" -ErrorAction SilentlyContinue
           $targets += Get-ChildItem -Path $bundle -Recurse -Filter "*setup*.exe" -ErrorAction SilentlyContinue
@@ -151,13 +148,13 @@ jobs:
 
           foreach ($file in $targets) {
             Write-Host "Signing $($file.FullName)"
-            & $toolName sign `
-              --endpoint "$env:ACS_ENDPOINT" `
-              --account "$env:ACS_ACCOUNT" `
-              --profile "$env:ACS_PROFILE" `
-              --timestamp-url "http://timestamp.acs.microsoft.com" `
-              --digest sha256 `
-              --file-digest sha256 `
+
+            & $signtool sign `
+              /fd SHA256 `
+              /tr "http://timestamp.acs.microsoft.com" `
+              /td SHA256 `
+              /dlib "$dlib" `
+              /dmdf "$metaPath" `
               "$($file.FullName)"
           }
 

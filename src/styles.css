@@ -4,8 +4,24 @@
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 
-  --bg: #3F8690;
-  --text: #E9A90B;
+  --bg: #008EAA;
+  --text: #EBA904;
+
+  /* Primary Palette */
+  --pcc-turquose: #008EAA;
+  --pcc-navy: #003865;
+
+  /* Secondary Palette */
+  --pcc-purple: #3D2B57;
+  --pcc-apple-green: #A8AD00;
+  --pcc-seafoam-green: #ADC8B8;
+  --pcc-tan: #8A837A;
+  --pcc-light-tan: #C3BEB5;
+
+  /* Tertiary Palette */
+  --pcc-salmon-pink: #FF8571;
+  --pcc-golden-yellow: #EBA904;
+  --pcc-bright-yellow: #FFE80A;
 }
 
 /* Full height + transparent webview background for transparent window */
