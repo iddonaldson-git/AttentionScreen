@@ -126,6 +126,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
 
+    env:
+      BUILD_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref_name }}
+
     steps:
       - name: Download macOS bundles
         uses: actions/download-artifact@v4
@@ -139,12 +142,27 @@ jobs:
           name: bundles-Windows
           path: dist/windows
 
+      - name: Show Windows bundle contents
+        shell: bash
+        run: |
+          echo "=== Windows bundle files ==="
+          find dist/windows -type f -name "*.exe" -print
+
+            - name: Prepare release assets folder
+              shell: bash
+              run: |
+                mkdir -p release-assets
+                find dist -type f \( -name "*.dmg" -o -name "*.msi" -o -name "*setup*.exe" \) -print -exec cp -v "{}" release-assets/ \;
+                ls -la release-assets
+
       - name: Create draft release + upload assets
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.BUILD_REF }}
+          name: "AttentionScreen ${{ env.BUILD_REF }}"
           draft: true
           prerelease: false
           files: |
-            dist/**/*
+            release-assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
