@@ -57,7 +57,7 @@ jobs:
         run: npm run tauri build
 
       # =====================================================
-      # WINDOWS SIGNING (TAG BUILDS ONLY) - AZURE CODE SIGNING
+      # WINDOWS SIGNING (TAG BUILDS ONLY) - AZURE TRUSTED SIGNING
       # =====================================================
 
       - name: Azure Login (OIDC)
@@ -86,18 +86,24 @@ jobs:
         run: |
           echo "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      - name: Debug Secret Presence
+      - name: Debug Secret Presence (no secret output)
+        if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
         shell: pwsh
         env:
           ACS_ENDPOINT: ${{ secrets.ACS_ENDPOINT }}
+          ACS_ACCOUNT:  ${{ secrets.ACS_ACCOUNT }}
+          ACS_PROFILE:  ${{ secrets.ACS_PROFILE }}
         run: |
-          if ([string]::IsNullOrEmpty($env:ACS_ENDPOINT)) {
-            Write-Host "ACS_ENDPOINT missing"
-          } else {
-            Write-Host "ACS_ENDPOINT present"
+          foreach ($n in @("ACS_ENDPOINT","ACS_ACCOUNT","ACS_PROFILE")) {
+            $val = [Environment]::GetEnvironmentVariable($n)
+            if ([string]::IsNullOrWhiteSpace($val)) {
+              Write-Host "$n missing"
+            } else {
+              Write-Host "$n present"
+            }
           }
-              
-      - name: Sign MSI and EXE (Azure Code Signing)
+
+      - name: Sign MSI and EXE (Azure Trusted Signing)
         if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
         shell: pwsh
         env:
@@ -105,26 +111,27 @@ jobs:
           ACS_ACCOUNT:  ${{ secrets.ACS_ACCOUNT }}    # e.g. attentionscreen-signing
           ACS_PROFILE:  ${{ secrets.ACS_PROFILE }}    # e.g. attentionscreen-profile
         run: |
-          # Fail fast if any are missing (does not print values)
+          # Fail fast if required ACS vars are missing (does not print values)
           $missing = @()
-          foreach ($n in @(
-            "AZURE_KEY_VAULT_URL",
-            "AZURE_KEY_VAULT_CERT_NAME",
-            "AZURE_KEY_VAULT_CLIENT_ID",
-            "AZURE_KEY_VAULT_CLIENT_SECRET",
-            "AZURE_KEY_VAULT_TENANT_ID"
-          )) {
+          foreach ($n in @("ACS_ENDPOINT","ACS_ACCOUNT","ACS_PROFILE")) {
             $val = [Environment]::GetEnvironmentVariable($n)
             if ([string]::IsNullOrWhiteSpace($val)) { $missing += $n }
           }
-
           if ($missing.Count -gt 0) {
             Write-Error "Missing secrets at runtime: $($missing -join ', ')"
             exit 1
           }
 
-          $bundle = Join-Path $env:GITHUB_WORKSPACE "src-tauri\target\release\bundle"
+          # Ensure tool is available (works whether command is AzureSignTool or azuresigntool)
+          $tool = Get-Command AzureSignTool -ErrorAction SilentlyContinue
+          if (-not $tool) { $tool = Get-Command azuresigntool -ErrorAction SilentlyContinue }
+          if (-not $tool) {
+            Write-Error "AzureSignTool not found on PATH (dotnet tool install may have failed)."
+            exit 1
+          }
+          $toolName = $tool.Name
 
+          $bundle = Join-Path $env:GITHUB_WORKSPACE "src-tauri\target\release\bundle"
           if (-not (Test-Path $bundle)) {
             Write-Error "Bundle folder not found: $bundle"
             Get-ChildItem -Recurse "src-tauri\target\release" -ErrorAction SilentlyContinue | Select-Object FullName
@@ -144,8 +151,7 @@ jobs:
 
           foreach ($file in $targets) {
             Write-Host "Signing $($file.FullName)"
-
-            AzureSignTool sign `
+            & $toolName sign `
               -kvu "$env:ACS_ENDPOINT" `
               -kvi "$env:ACS_ACCOUNT" `
               -kvc "$env:ACS_PROFILE" `
