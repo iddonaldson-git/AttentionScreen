@@ -60,8 +60,12 @@ jobs:
       # WINDOWS SIGNING (TAG BUILDS ONLY) - AZURE CODE SIGNING
       # =====================================================
 
-      - name: Print Azure Client ID
-        run: echo "${{ secrets.AZURE_CLIENT_ID }}"
+      - name: Show OIDC token claims (no secret output)
+        if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
+        shell: pwsh
+        run: |
+          Write-Host "ref = $env:GITHUB_REF"
+          Write-Host "repository = $env:GITHUB_REPOSITORY"
 
       - name: Azure Login (OIDC)
         if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
@@ -69,7 +73,8 @@ jobs:
         with:
           client-id: 446343b8-74b9-4d61-82fa-afae095199bd
           tenant-id: 049ec3b5-40f7-47b6-ae95-2f7a19c28a28
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          auth-type: ID_TOKEN
+          allow-no-subscriptions: true
 
       - name: Setup .NET
         if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
