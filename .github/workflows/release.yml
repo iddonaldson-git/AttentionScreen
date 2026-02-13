@@ -68,96 +68,64 @@ jobs:
           tenant-id: 049ec3b5-40f7-47b6-ae95-2f7a19c28a28
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Install Trusted Signing Client Tools
-        if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
-        shell: pwsh
-        run: |
-          # Winget is available on windows-latest; installs the client tools that include Azure.CodeSigning.Dlib.dll
-          winget --version
-          winget install --id Microsoft.TrustedSigningClientTools -e --accept-source-agreements --accept-package-agreements
-
       - name: Sign MSI and EXE (Azure Trusted Signing)
         if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
         shell: pwsh
         env:
-          ACS_ENDPOINT: ${{ secrets.ACS_ENDPOINT }}   # e.g. https://eus.codesigning.azure.net
-          ACS_ACCOUNT:  ${{ secrets.ACS_ACCOUNT }}    # CodeSigningAccountName
-          ACS_PROFILE:  ${{ secrets.ACS_PROFILE }}    # CertificateProfileName
+          AZURE_KEY_VAULT_URL: ${{ secrets.AZURE_KEY_VAULT_URL }}
+          AZURE_KEY_VAULT_CERT_NAME: ${{ secrets.AZURE_KEY_VAULT_CERT_NAME }}
         run: |
-          # Fail fast if required ACS vars are missing (does not print values)
-          $missing = @()
-          foreach ($n in @("ACS_ENDPOINT","ACS_ACCOUNT","ACS_PROFILE")) {
-            if ([string]::IsNullOrWhiteSpace($env:$n)) { $missing += $n }
-          }
-          if ($missing.Count -gt 0) {
-            Write-Error "Missing secrets at runtime: $($missing -join ', ')"
+      
+          # ----------------------------------------
+          # Verify Trusted Signing Dlib exists
+          # ----------------------------------------
+          $dlib = $env:DlibPath
+      
+          if (-not (Test-Path $dlib)) {
+            Write-Error "Dlib not found at $dlib"
             exit 1
           }
-
-          # Locate signtool.exe (Windows SDK)
-          $signtool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter signtool.exe -ErrorAction SilentlyContinue |
-            Sort-Object FullName -Descending |
-            Select-Object -First 1 -ExpandProperty FullName
-
-          if (-not $signtool) {
-            Write-Error "signtool.exe not found under Windows Kits."
-            exit 1
-          }
-          Write-Host "Using signtool: $signtool"
-
-          # Locate Azure.CodeSigning.Dlib.dll from Trusted Signing Client Tools install
-          $dlib = Get-ChildItem "C:\Program Files" -Recurse -Filter Azure.CodeSigning.Dlib.dll -ErrorAction SilentlyContinue |
-            Sort-Object FullName -Descending |
-            Select-Object -First 1 -ExpandProperty FullName
-
-          if (-not $dlib) {
-            Write-Error "Azure.CodeSigning.Dlib.dll not found. Trusted Signing Client Tools may not have installed correctly."
-            exit 1
-          }
+      
           Write-Host "Using dlib: $dlib"
-
-          # Create metadata.json required by Trusted Signing
-          $metaPath = Join-Path $env:RUNNER_TEMP "metadata.json"
-          $meta = @{
-            Endpoint = $env:ACS_ENDPOINT
-            CodeSigningAccountName = $env:ACS_ACCOUNT
-            CertificateProfileName = $env:ACS_PROFILE
-            CorrelationId = $env:GITHUB_RUN_ID
-          } | ConvertTo-Json
-
-          $meta | Out-File -FilePath $metaPath -Encoding utf8
-          Write-Host "Wrote metadata: $metaPath"
-
+      
+          # ----------------------------------------
+          # Find Tauri bundle output
+          # ----------------------------------------
           $bundle = Join-Path $env:GITHUB_WORKSPACE "src-tauri\target\release\bundle"
+      
           if (-not (Test-Path $bundle)) {
             Write-Error "Bundle folder not found: $bundle"
-            Get-ChildItem -Recurse "src-tauri\target\release" -ErrorAction SilentlyContinue | Select-Object FullName
             exit 1
           }
-
-          # Find Windows installers produced by Tauri
+      
+          # ----------------------------------------
+          # Locate installers
+          # ----------------------------------------
           $targets = @()
           $targets += Get-ChildItem -Path $bundle -Recurse -Filter "*.msi" -ErrorAction SilentlyContinue
           $targets += Get-ChildItem -Path $bundle -Recurse -Filter "*setup*.exe" -ErrorAction SilentlyContinue
           $targets = $targets | Sort-Object FullName -Unique
-
+      
           if ($targets.Count -eq 0) {
-            Write-Error "No MSI or setup EXE found under: $bundle"
+            Write-Error "No installers found under: $bundle"
             exit 1
           }
-
+      
+          # ----------------------------------------
+          # Sign each installer
+          # ----------------------------------------
           foreach ($file in $targets) {
             Write-Host "Signing $($file.FullName)"
-
-            & $signtool sign `
-              /fd SHA256 `
-              /tr "http://timestamp.acs.microsoft.com" `
-              /td SHA256 `
+      
+            & signtool sign `
+              /fd sha256 `
+              /tr http://timestamp.acs.microsoft.com `
+              /td sha256 `
               /dlib "$dlib" `
-              /dmdf "$metaPath" `
+              /dmdf metadata.json `
               "$($file.FullName)"
           }
-
+      
       # ---------------------------
       # CREATE RELEASE (TAG BUILDS)
       # ---------------------------

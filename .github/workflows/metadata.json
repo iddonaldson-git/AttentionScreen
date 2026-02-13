@@ -1,0 +1,5 @@
+{
+    "Endpoint": "https://eastus.codesigning.azure.net/",
+    "CodeSigningAccountName": "attentionscreen-signing",
+    "CertificateProfileName": "attentionscreen-profile"
+}
