@@ -68,36 +68,26 @@ jobs:
           tenant-id: 049ec3b5-40f7-47b6-ae95-2f7a19c28a28
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Install Trusted Signing client
+        if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri https://aka.ms/trustedsigningclient -OutFile TrustedSigningClient.msi
+          Start-Process msiexec.exe -ArgumentList "/i TrustedSigningClient.msi /quiet /norestart" -Wait
+
       - name: Sign MSI and EXE (Azure Trusted Signing)
         if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
         shell: pwsh
-        env:
-          AZURE_KEY_VAULT_URL: ${{ secrets.AZURE_KEY_VAULT_URL }}
-          AZURE_KEY_VAULT_CERT_NAME: ${{ secrets.AZURE_KEY_VAULT_CERT_NAME }}
         run: |
-      
-          # ----------------------------------------
-          # Verify Trusted Signing Dlib exists
-          # ----------------------------------------
-          $dlib = $env:DlibPath
-      
-          if (-not (Test-Path $dlib)) {
-            Write-Error "Dlib not found at $dlib"
-            exit 1
-          }
-      
-          Write-Host "Using dlib: $dlib"
-      
           # ----------------------------------------
           # Find Tauri bundle output
           # ----------------------------------------
           $bundle = Join-Path $env:GITHUB_WORKSPACE "src-tauri\target\release\bundle"
-      
           if (-not (Test-Path $bundle)) {
             Write-Error "Bundle folder not found: $bundle"
             exit 1
           }
-      
+
           # ----------------------------------------
           # Locate installers
           # ----------------------------------------
@@ -105,24 +95,36 @@ jobs:
           $targets += Get-ChildItem -Path $bundle -Recurse -Filter "*.msi" -ErrorAction SilentlyContinue
           $targets += Get-ChildItem -Path $bundle -Recurse -Filter "*setup*.exe" -ErrorAction SilentlyContinue
           $targets = $targets | Sort-Object FullName -Unique
-      
+
           if ($targets.Count -eq 0) {
             Write-Error "No installers found under: $bundle"
             exit 1
           }
-      
+
+          # ----------------------------------------
+          # Write metadata.json for Trusted Signing
+          # ----------------------------------------
+          $metadata = @{
+            Endpoint = "https://eus.codesigning.azure.net"
+            CodeSigningAccountName = "attentionscreen-signing"
+            CertificateProfileName = "attentionscreen-profile"
+          }
+
+          $metadataPath = Join-Path $env:GITHUB_WORKSPACE "metadata.json"
+          $metadata | ConvertTo-Json -Depth 5 | Out-File $metadataPath -Encoding utf8
+
           # ----------------------------------------
           # Sign each installer
           # ----------------------------------------
           foreach ($file in $targets) {
             Write-Host "Signing $($file.FullName)"
-      
+
             & signtool sign `
               /fd sha256 `
               /tr http://timestamp.acs.microsoft.com `
               /td sha256 `
-              /dlib "$dlib" `
-              /dmdf metadata.json `
+              /dlib Azure.CodeSigning.Dlib.dll `
+              /dmdf $metadataPath `
               "$($file.FullName)"
           }
       
