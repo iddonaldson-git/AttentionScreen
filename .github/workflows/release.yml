@@ -152,12 +152,12 @@ jobs:
           foreach ($file in $targets) {
             Write-Host "Signing $($file.FullName)"
             & $toolName sign `
-              -kvu "$env:ACS_ENDPOINT" `
-              -kvi "$env:ACS_ACCOUNT" `
-              -kvc "$env:ACS_PROFILE" `
-              -tr "http://timestamp.acs.microsoft.com" `
-              -td sha256 `
-              -fd sha256 `
+              --endpoint "$env:ACS_ENDPOINT" `
+              --account "$env:ACS_ACCOUNT" `
+              --profile "$env:ACS_PROFILE" `
+              --timestamp-url "http://timestamp.acs.microsoft.com" `
+              --digest sha256 `
+              --file-digest sha256 `
               "$($file.FullName)"
           }
 
