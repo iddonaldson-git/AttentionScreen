@@ -4,13 +4,13 @@
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="/src/styles.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tauri App</title>
+    <title>Attention Screen</title>
     <script type="module" src="/src/main.ts" defer></script>
 
     <!-- Optional: helps avoid flash of default colors before JS runs -->
     <style>
       :root {
-        --app-bg: #003865;
+        --app-bg: #008EAA;
         --app-text: #ffffff;
       }
     </style>
@@ -134,12 +134,14 @@
         return raw;
       }
 
+      /*
       function updateStatus(el, ok, label) {
         el.classList.remove("pass", "fail");
         el.classList.add(ok ? "pass" : "fail");
         el.textContent = label + ": " + (ok ? "PASS" : "FAIL");
       }
-
+      */
+     
       function updateUi() {
         const bgHex = getResolvedSlotHex("--app-bg");
         const textHex = getResolvedSlotHex("--app-text");
@@ -150,8 +152,8 @@
         const ratio = contrastRatio(bgHex, textHex);
         contrastValue.textContent = ratio ? `${ratio.toFixed(2)}:1` : "N/A";
 
-        updateStatus(aaNormal, ratio !== null && ratio >= 4.5, "AA normal");
-        updateStatus(aaLarge, ratio !== null && ratio >= 3.0, "AA large");
+        // updateStatus(aaNormal, ratio !== null && ratio >= 4.5, "AA normal");
+        // updateStatus(aaLarge, ratio !== null && ratio >= 3.0, "AA large");
       }
 
       // ---- Init ----

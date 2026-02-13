@@ -53,15 +53,49 @@ jobs:
       - name: Install frontend deps
         run: npm ci
 
-      - name: Build Tauri App
+      # ---------------------------
+      # TAG BUILDS: build via tauri-action (this produces the bundles)
+      # ---------------------------
+      - name: Build and upload release assets (tag builds)
+        if: env.IS_TAG_BUILD == 'true'
+        id: tauri_build
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ env.BUILD_REF }}
+          releaseName: "AttentionScreen ${{ env.BUILD_REF }}"
+          releaseDraft: true
+          prerelease: false
+
+      # ---------------------------
+      # NON-TAG BUILDS: just build (no release)
+      # ---------------------------
+      - name: Build (non-tag)
+        if: env.IS_TAG_BUILD != 'true'
         run: npm run tauri build
 
-      # =====================================================
-      # WINDOWS SIGNING (TAG BUILDS ONLY) - AZURE TRUSTED SIGNING
-      # =====================================================
+      - name: List Tauri bundle output (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Write-Host "=== bundle folder ==="
+          if (Test-Path src-tauri\target\release\bundle) {
+            Get-ChildItem -Recurse -Force src-tauri\target\release\bundle | Select FullName
+          } else {
+            Write-Host "bundle folder not found"
+          }
 
+          Write-Host "=== installers found ==="
+          Get-ChildItem -Recurse -Force src-tauri\target\release `
+            | Where-Object { $_.Name -match '\.msi$|\.exe$|\.msix$' } `
+            | Select FullName
+
+      # =====================================================
+      # WINDOWS SIGNING (TAG BUILDS ONLY)
+      # =====================================================
       - name: Azure Login (OIDC)
-        if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
+        if: runner.os == 'Windows' && env.IS_TAG_BUILD == 'true'
         uses: azure/login@v2
         with:
           client-id: 446343b8-74b9-4d61-82fa-afae095199bd
@@ -69,7 +103,7 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Sign Windows installers with Azure Trusted Signing
-        if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
+        if: runner.os == 'Windows' && env.IS_TAG_BUILD == 'true'
         uses: azure/artifact-signing-action@v1
         with:
           endpoint: https://eus.codesigning.azure.net
@@ -80,18 +114,3 @@ jobs:
           file-digest: SHA256
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
           timestamp-digest: SHA256
-      
-      
-      # ---------------------------
-      # CREATE RELEASE (TAG BUILDS)
-      # ---------------------------
-      - name: Upload Release Assets
-        if: env.IS_TAG_BUILD == 'true'
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: ${{ env.BUILD_REF }}
-          releaseName: "AttentionScreen ${{ env.BUILD_REF }}"
-          releaseDraft: true
-          prerelease: false
