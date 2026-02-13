@@ -122,14 +122,12 @@ jobs:
             src-tauri/target/release/bundle/**
 
   release:
-    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && startsWith(inputs.ref, 'v'))
-    needs: build
     runs-on: ubuntu-latest
-
-    env:
-      BUILD_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref_name }}
-
+    needs: build
     steps:
+      - name: Set up job
+        run: echo "Starting release job"
+
       - name: Download macOS bundles
         uses: actions/download-artifact@v4
         with:
@@ -147,22 +145,18 @@ jobs:
         run: |
           echo "=== Windows bundle files ==="
           find dist/windows -type f -name "*.exe" -print
+          find dist/windows -type f -name "*.msi" -print
 
-            - name: Prepare release assets folder
-              shell: bash
-              run: |
-                mkdir -p release-assets
-                find dist -type f \( -name "*.dmg" -o -name "*.msi" -o -name "*setup*.exe" \) -print -exec cp -v "{}" release-assets/ \;
-                ls -la release-assets
+      - name: Prepare release assets folder
+        shell: bash
+        run: |
+          mkdir -p release-assets
+          find dist -type f \( -name "*.dmg" -o -name "*.msi" -o -name "*setup*.exe" \) -print -exec cp -v "{}" release-assets/ \;
+          ls -la release-assets
 
       - name: Create draft release + upload assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.BUILD_REF }}
-          name: "AttentionScreen ${{ env.BUILD_REF }}"
           draft: true
-          prerelease: false
-          files: |
-            release-assets/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          files: release-assets/*
+          

@@ -105,6 +105,10 @@ body {
 }
 
 
+:root {
+  --app-bg: #008EAA;
+  --app-text: #ffffff;
+}
 
 :root {
   /* your PCC palette vars here */
@@ -217,4 +221,56 @@ body {
 .message #msg-primary,
 .message #msg-secondary {
   outline: none;
+}
+
+/* Toggle button */
+.theme-toggle {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 2147483648;
+}
+
+/* Panel */
+.theme-panel {
+  position: fixed;
+  top: 52px;
+  right: 12px;
+
+  width: 260px;              /* ← fixed width */
+  padding: 14px;
+
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  z-index: 999;
+}
+
+/* Hidden state (when [hidden] present) */
+.theme-panel[hidden] {
+  display: none;
+}
+
+/* Labels + selects */
+.theme-label {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  gap: 4px;
+}
+
+.theme-select {
+  width: 100%;
+}
+
+/* Buttons */
+.theme-btn {
+  width: 100%;
 }

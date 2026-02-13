@@ -6,31 +6,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Attention Screen</title>
     <script type="module" src="/src/main.ts"></script>
-
-    <!-- Optional: helps avoid flash of default colors before JS runs -->
-    <style>
-      :root {
-        --app-bg: #008EAA;
-        --app-text: #ffffff;
-      }
-    </style>
   </head>
 
   <body>
     <div id="dragbar" data-tauri-drag-region></div>
 
-    <!-- Theme controls (Background + Text) -->
-    <div class="theme-panel" aria-label="Theme controls">
+    <button id="themeToggle" class="theme-toggle" type="button">
+      🎨 Theme
+    </button>
+
+    <!-- Theme Controls -->
+    <div id="themePanel" class="theme-panel" aria-label="Theme controls" hidden>
       <label class="theme-label">
         Background
         <select id="bgSelect" class="theme-select"></select>
       </label>
+
       <label class="theme-label">
         Text
         <select id="textSelect" class="theme-select"></select>
       </label>
+
       <div class="theme-meta" aria-live="polite">
-        <button id="swapBtn" class="theme-btn" type="button" title="Swap background and text">Swap</button>
+        <button id="swapBtn" class="theme-btn" type="button">
+          Swap
+        </button>
       </div>
     </div>
 
@@ -41,7 +41,6 @@
         <div id="msg-secondary" contenteditable="true" spellcheck="false">CHECK YOUR ZOOM CHAT</div>
       </div>
     </div>
-
 
   </body>
 </html>

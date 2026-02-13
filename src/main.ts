@@ -41,6 +41,21 @@ const PCC: Record<string, PCCEntry> = {
 const BG_ALLOWED = Object.keys(PCC);
 const TEXT_ALLOWED = Object.keys(PCC);
 
+const toggleBtn = document.getElementById("themeToggle")!;
+const panel = document.getElementById("themePanel")!;
+
+toggleBtn.addEventListener("click", () => {
+  panel.toggleAttribute("hidden");
+});
+
+document.addEventListener("click", (e) => {
+  const target = e.target as Node;
+
+  if (!panel.contains(target) && target !== toggleBtn) {
+    panel.setAttribute("hidden", "");
+  }
+});
+
 const root = document.documentElement;
 
 function mustGetEl<T extends HTMLElement>(id: string): T {
