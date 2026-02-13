@@ -107,9 +107,17 @@ jobs:
         run: |
           # Fail fast if any are missing (does not print values)
           $missing = @()
-          foreach ($n in @("ACS_ENDPOINT","ACS_ACCOUNT","ACS_PROFILE")) {
-            if ([string]::IsNullOrEmpty($env:$n)) { $missing += $n }
+          foreach ($n in @(
+            "AZURE_KEY_VAULT_URL",
+            "AZURE_KEY_VAULT_CERT_NAME",
+            "AZURE_KEY_VAULT_CLIENT_ID",
+            "AZURE_KEY_VAULT_CLIENT_SECRET",
+            "AZURE_KEY_VAULT_TENANT_ID"
+          )) {
+            $val = [Environment]::GetEnvironmentVariable($n)
+            if ([string]::IsNullOrWhiteSpace($val)) { $missing += $n }
           }
+
           if ($missing.Count -gt 0) {
             Write-Error "Missing secrets at runtime: $($missing -join ', ')"
             exit 1
