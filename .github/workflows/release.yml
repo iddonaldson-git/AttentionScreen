@@ -53,26 +53,15 @@ jobs:
       - name: Install frontend deps
         run: npm ci
 
-      # ---------------------------
-      # TAG BUILDS: build via tauri-action (this produces the bundles)
-      # ---------------------------
-      - name: Build and upload release assets (tag builds)
-        if: env.IS_TAG_BUILD == 'true'
-        id: tauri_build
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: ${{ env.BUILD_REF }}
-          releaseName: "AttentionScreen ${{ env.BUILD_REF }}"
-          releaseDraft: true
-          prerelease: false
+      # ---- Windows packaging deps (this is usually the missing piece) ----
+      - name: Install Windows bundling tools (WiX + NSIS)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install wixtoolset -y
+          choco install nsis -y
 
-      # ---------------------------
-      # NON-TAG BUILDS: just build (no release)
-      # ---------------------------
-      - name: Build (non-tag)
-        if: env.IS_TAG_BUILD != 'true'
+      - name: Build Tauri App
         run: npm run tauri build
 
       - name: List Tauri bundle output (Windows)
@@ -80,19 +69,10 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "=== bundle folder ==="
-          if (Test-Path src-tauri\target\release\bundle) {
-            Get-ChildItem -Recurse -Force src-tauri\target\release\bundle | Select FullName
-          } else {
-            Write-Host "bundle folder not found"
-          }
-
-          Write-Host "=== installers found ==="
-          Get-ChildItem -Recurse -Force src-tauri\target\release `
-            | Where-Object { $_.Name -match '\.msi$|\.exe$|\.msix$' } `
-            | Select FullName
+          Get-ChildItem -Recurse -Force src-tauri\target\release\bundle | Select FullName
 
       # =====================================================
-      # WINDOWS SIGNING (TAG BUILDS ONLY)
+      # WINDOWS SIGNING (TAG BUILDS ONLY) - AZURE TRUSTED SIGNING
       # =====================================================
       - name: Azure Login (OIDC)
         if: runner.os == 'Windows' && env.IS_TAG_BUILD == 'true'
@@ -102,15 +82,69 @@ jobs:
           tenant-id: 049ec3b5-40f7-47b6-ae95-2f7a19c28a28
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Sign Windows installers with Azure Trusted Signing
+      # Sign MSI
+      - name: Sign MSI (Azure Trusted Signing)
         if: runner.os == 'Windows' && env.IS_TAG_BUILD == 'true'
         uses: azure/artifact-signing-action@v1
         with:
           endpoint: https://eus.codesigning.azure.net
           signing-account-name: attentionscreen-signing
           certificate-profile-name: attentionscreen-profile
-          files-folder: src-tauri/target/release/bundle
-          files-folder-filter: msi,exe
+          files-folder: src-tauri/target/release/bundle/msi
+          files-folder-filter: msi
           file-digest: SHA256
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
           timestamp-digest: SHA256
+
+      # Sign NSIS installer EXE
+      - name: Sign NSIS installer EXE (Azure Trusted Signing)
+        if: runner.os == 'Windows' && env.IS_TAG_BUILD == 'true'
+        uses: azure/artifact-signing-action@v1
+        with:
+          endpoint: https://eus.codesigning.azure.net
+          signing-account-name: attentionscreen-signing
+          certificate-profile-name: attentionscreen-profile
+          files-folder: src-tauri/target/release/bundle/nsis
+          files-folder-filter: exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      # ---------------------------
+      # Upload artifacts to the workflow run (both platforms)
+      # ---------------------------
+      - name: Upload build artifacts
+        if: env.IS_TAG_BUILD == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundles-${{ runner.os }}
+          path: |
+            src-tauri/target/release/bundle/**
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && startsWith(inputs.ref, 'v'))
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download macOS bundles
+        uses: actions/download-artifact@v4
+        with:
+          name: bundles-macOS
+          path: dist/macos
+
+      - name: Download Windows bundles
+        uses: actions/download-artifact@v4
+        with:
+          name: bundles-Windows
+          path: dist/windows
+
+      - name: Create draft release + upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          prerelease: false
+          files: |
+            dist/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

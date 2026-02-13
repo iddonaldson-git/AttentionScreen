@@ -32,11 +32,11 @@
       </label>
 
       <div class="theme-meta" aria-live="polite">
-        <span class="theme-pill"><span class="theme-dot bg"></span><span id="bgValue">BG</span></span>
-        <span class="theme-pill"><span class="theme-dot"></span><span id="textValue">Text</span></span>
-        <span class="theme-pill">Contrast <strong id="contrastValue">0.00:1</strong></span>
-        <span id="aaNormal" class="theme-status">AA normal</span>
-        <span id="aaLarge" class="theme-status">AA large</span>
+        <!-- <span class="theme-pill"><span class="theme-dot bg"></span><span id="bgValue">BG</span></span> -->
+        <!-- <span class="theme-pill"><span class="theme-dot"></span><span id="textValue">Text</span></span> -->
+        <!-- <span class="theme-pill">Contrast <strong id="contrastValue">0.00:1</strong></span> -->
+        <!-- <span id="aaNormal" class="theme-status">AA normal</span> -->
+        <!-- <span id="aaLarge" class="theme-status">AA large</span> -->
         <button id="swapBtn" class="theme-btn" type="button" title="Swap background and text">Swap</button>
       </div>
     </div>
@@ -71,11 +71,11 @@
 
       const bgSelect = document.getElementById("bgSelect");
       const textSelect = document.getElementById("textSelect");
-      const bgValue = document.getElementById("bgValue");
-      const textValue = document.getElementById("textValue");
-      const contrastValue = document.getElementById("contrastValue");
-      const aaNormal = document.getElementById("aaNormal");
-      const aaLarge = document.getElementById("aaLarge");
+      // const bgValue = document.getElementById("bgValue");
+      // const textValue = document.getElementById("textValue");
+      // const contrastValue = document.getElementById("contrastValue");
+      // const aaNormal = document.getElementById("aaNormal");
+      // const aaLarge = document.getElementById("aaLarge");
       const swapBtn = document.getElementById("swapBtn");
 
       function fillSelect(select, allowedKeys) {
@@ -146,11 +146,11 @@
         const bgHex = getResolvedSlotHex("--app-bg");
         const textHex = getResolvedSlotHex("--app-text");
 
-        bgValue.textContent = bgHex.toUpperCase();
-        textValue.textContent = textHex.toUpperCase();
+        // bgValue.textContent = bgHex.toUpperCase();
+        // textValue.textContent = textHex.toUpperCase();
 
         const ratio = contrastRatio(bgHex, textHex);
-        contrastValue.textContent = ratio ? `${ratio.toFixed(2)}:1` : "N/A";
+        // contrastValue.textContent = ratio ? `${ratio.toFixed(2)}:1` : "N/A";
 
         // updateStatus(aaNormal, ratio !== null && ratio >= 4.5, "AA normal");
         // updateStatus(aaLarge, ratio !== null && ratio >= 3.0, "AA large");
@@ -161,8 +161,8 @@
       fillSelect(textSelect, TEXT_ALLOWED);
 
       // Initial values (you can change these)
-      bgSelect.value = "navy";
-      textSelect.value = "light-tan";
+      bgSelect.value = "turquose";
+      textSelect.value = "bright-yellow";
 
       // Apply to theme slots (styles.css should use these vars)
       setThemeSlot("--app-bg", bgSelect.value);
