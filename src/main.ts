@@ -41,11 +41,30 @@ const PCC: Record<string, PCCEntry> = {
 const BG_ALLOWED = Object.keys(PCC);
 const TEXT_ALLOWED = Object.keys(PCC);
 
-const toggleBtn = document.getElementById("themeToggle")!;
+const toggleBtn = document.getElementById("themeToggle") as HTMLButtonElement | null;
+
 const panel = document.getElementById("themePanel")!;
 
-toggleBtn.addEventListener("click", () => {
-  panel.toggleAttribute("hidden");
+
+
+
+toggleBtn?.addEventListener("click", () => {
+  // panel.toggleAttribute("hidden");
+  toggleThemePanel()
+});
+
+document.addEventListener("keydown", (e) => {
+  // Ctrl+T (Windows/Linux) or Cmd+T (macOS)
+  const isT = e.key.toLowerCase() === "t";
+  if (!isT) return;
+
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault(); // stops browser "new tab" behavior
+    toggleThemePanel();
+  }
+
+  // Optional: Esc closes it
+  if (e.key === "Escape") toggleThemePanel(false);
 });
 
 document.addEventListener("click", (e) => {
@@ -130,6 +149,17 @@ function initThemeControls() {
     setThemeSlot("--app-text", textSelect.value);
     updateUi();
   });
+}
+
+function toggleThemePanel(force?: boolean) {
+  const panel = document.getElementById("themePanel");
+  if (!panel) return;
+
+  if (typeof force === "boolean") {
+    panel.toggleAttribute("hidden", !force);
+  } else {
+    panel.toggleAttribute("hidden");
+  }
 }
 
 // Not strictly necessary since module scripts run after HTML parsing,
