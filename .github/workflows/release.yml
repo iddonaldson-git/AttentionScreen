@@ -68,106 +68,19 @@ jobs:
           tenant-id: 049ec3b5-40f7-47b6-ae95-2f7a19c28a28
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Install Trusted Signing client
+      - name: Sign Windows installers with Azure Trusted Signing
         if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
-        shell: pwsh
-        run: |
-          Invoke-WebRequest -Uri https://aka.ms/trustedsigningclient -OutFile TrustedSigningClient.msi
-          Start-Process msiexec.exe -ArgumentList "/i TrustedSigningClient.msi /quiet /norestart" -Wait
-
-      - name: Locate Azure dlib (Trusted Signing)
-        if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
-        shell: pwsh
-        run: |
-          $roots = @(
-            ${env:ProgramFiles},
-            ${env:ProgramFiles(x86)},
-            "C:\Program Files",
-            "C:\Program Files (x86)"
-          ) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -Unique
-
-          $dlib = $null
-          foreach ($r in $roots) {
-            $found = Get-ChildItem -Path $r -Recurse -Filter "Azure.CodeSigning.Dlib.dll" -ErrorAction SilentlyContinue |
-              Select-Object -First 1
-            if ($found) { $dlib = $found.FullName; break }
-          }
-
-          if (-not $dlib) {
-            Write-Error "Azure.CodeSigning.Dlib.dll not found. Trusted Signing client may not have installed correctly."
-            exit 1
-          }
-
-          "DLIB_PATH=$dlib" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          Write-Host "Found dlib at: $dlib"
-
-      - name: Locate SignTool (preinstalled)
-        if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
-        shell: pwsh
-        run: |
-          $signtool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter signtool.exe |
-            Sort-Object FullName -Descending |
-            Select-Object -First 1 -ExpandProperty FullName
-
-          if (-not $signtool) {
-            throw "signtool.exe not found on runner"
-          }
-
-          "SIGNTOOL_PATH=$signtool" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          Write-Host "Found SignTool at $signtool"
-
-      - name: Sign MSI and EXE (Azure Trusted Signing)
-        if: matrix.platform == 'windows-latest' && env.IS_TAG_BUILD == 'true'
-        shell: pwsh
-        run: |
-          $bundle = Join-Path $env:GITHUB_WORKSPACE "src-tauri\target\release\bundle"
-          if (-not (Test-Path $bundle)) {
-            Write-Error "Bundle folder not found: $bundle"
-            exit 1
-          }
-
-          $targets = @()
-          $targets += Get-ChildItem -Path $bundle -Recurse -Filter "*.msi" -ErrorAction SilentlyContinue
-          $targets += Get-ChildItem -Path $bundle -Recurse -Filter "*setup*.exe" -ErrorAction SilentlyContinue
-          $targets = $targets | Sort-Object FullName -Unique
-
-          if ($targets.Count -eq 0) {
-            Write-Error "No installers found under: $bundle"
-            exit 1
-          }
-
-          # Trusted Signing metadata (must match your Azure resources exactly)
-          $metadata = @{
-            Endpoint              = "https://eus.codesigning.azure.net"
-            CodeSigningAccountName = "attentionscreen-signing"
-            CertificateProfileName = "attentionscreen-profile"
-          }
-
-          $metadataPath = Join-Path $env:GITHUB_WORKSPACE "metadata.json"
-          $metadata | ConvertTo-Json -Depth 5 | Out-File $metadataPath -Encoding utf8
-
-          # Sanity check: show what we're using
-          Write-Host "Using SignTool: $env:SIGNTOOL_PATH"
-          Write-Host "Using dlib: $env:DLIB_PATH"
-          Write-Host "Using metadata: $metadataPath"
-
-          foreach ($file in $targets) {
-            Write-Host "Signing $($file.FullName)"
-
-            & "$env:SIGNTOOL_PATH" sign `
-              /v `
-              /fd sha256 `
-              /tr http://timestamp.acs.microsoft.com `
-              /td sha256 `
-              /dlib "$env:DLIB_PATH" `
-              /dmdf "$metadataPath" `
-              "$($file.FullName)"
-
-            if ($LASTEXITCODE -ne 0) {
-              Write-Error "Signing failed for $($file.FullName) with exit code $LASTEXITCODE"
-              exit $LASTEXITCODE
-            }
-          }
+        uses: azure/artifact-signing-action@v1
+        with:
+          endpoint: https://eus.codesigning.azure.net
+          signing-account-name: attentionscreen-signing
+          certificate-profile-name: attentionscreen-profile
+          files-folder: src-tauri/target/release/bundle
+          files-folder-filter: msi,exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+      
       
       # ---------------------------
       # CREATE RELEASE (TAG BUILDS)
