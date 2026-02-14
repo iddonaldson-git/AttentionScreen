@@ -8,8 +8,10 @@
   --app-text: #EBA904;
 
   /* Primary Palette */
-  --pcc-turquose: #008EAA;
+  --pcc-turquoise: #008EAA;
   --pcc-navy: #003865;
+  --pcc-white: #FFFFFF;
+  --pcc-black: #000000;
 
   /* Secondary Palette */
   --pcc-purple: #3D2B57;
@@ -41,7 +43,7 @@ body::before {
 }
 
 body {
-  color: var(--text);
+  color: var(--app-text);
   overflow: hidden;
 }
 
@@ -112,11 +114,11 @@ body {
 
 :root {
   /* your PCC palette vars here */
-  /* --pcc-turquose: #008EAA; etc... */
+  /* --pcc-turquoise: #008EAA; etc... */
 
   /* theme slots controlled by the dropdown */
-  --app-bg: var(--pcc-turquose);
-  --app-text: #ffffff;
+  --app-bg: var(--pcc-turquoise);
+  --app-text: var(--pcc-white);
 }
 
 body {
@@ -125,97 +127,17 @@ body {
   color: var(--app-text);
 }
 
-/* Panel styling for the dropdown UI */
-.theme-panel {
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  right: 12px;
-  z-index: 9999;
-  display: grid;
-  gap: 10px;
-  padding: 12px;
-  border-radius: 14px;
-  border: 1px solid color-mix(in oklab, var(--app-text), transparent 80%);
-  background: color-mix(in oklab, var(--app-bg), white 10%);
-  backdrop-filter: blur(10px);
-}
-
-.theme-label {
-  display: grid;
-  gap: 6px;
-  font-size: 12.5px;
-}
-
-.theme-select {
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid color-mix(in oklab, var(--app-text), transparent 80%);
-  background: color-mix(in oklab, var(--app-bg), white 14%);
-  color: var(--app-text);
-  outline: none;
-}
-
-.theme-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.theme-pill {
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-  padding: 7px 10px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in oklab, var(--app-text), transparent 80%);
-  background: color-mix(in oklab, var(--app-bg), white 12%);
-  font-size: 12.5px;
-}
-
-.theme-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in oklab, var(--app-text), transparent 75%);
-  background: var(--app-text);
-}
-
-.theme-dot.bg {
-  background: var(--app-bg);
-}
-
-.theme-status {
-  padding: 7px 10px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in oklab, var(--app-text), transparent 80%);
-  font-size: 12.5px;
-}
-
-.theme-status.pass {
-  background: rgba(40, 180, 99, 0.18);
-}
-
-.theme-status.fail {
-  background: rgba(231, 76, 60, 0.18);
-}
-
-.theme-btn {
-  padding: 9px 12px;
-  border-radius: 10px;
-  border: 1px solid color-mix(in oklab, var(--app-text), transparent 80%);
-  background: color-mix(in oklab, var(--app-bg), white 16%);
-  color: var(--app-text);
-  cursor: pointer;
-}
-
 /* Your existing layout can stay, but note the fixed panel sits on top */
 .wrap {
   min-height: 100vh;
   display: grid;
   place-items: center;
   padding-top: 84px; /* gives space so panel doesn't overlap content */
+  
+}
+
+.wrap.timer-visible {
+  padding-bottom: 220px;
 }
 
 .message #msg-primary,
@@ -224,52 +146,10 @@ body {
 }
 
 
-/* Panel */
-.theme-panel {
-  position: fixed;
-  top: 52px;
-  right: 12px;
 
-  width: 180px;              /* ← fixed width */
-  padding: 14px;
-
-  background: rgba(0, 0, 0, 0.68);
-  color: white;
-
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-
-  z-index: 999;
-}
-
-/* Hidden state (when [hidden] present) */
-.theme-panel[hidden] {
-  display: none;
-}
-
-/* Labels + selects */
-.theme-label {
-  display: flex;
-  flex-direction: column;
-  font-size: 14px;
-  gap: 4px;
-}
-
-.theme-select {
-  width: 100%;
-}
-
-/* Buttons */
-.theme-btn {
-  width: 100%;
-}
 
 /* Toggle button */
-.theme-toggle {
+.settingsBtn {
   position: fixed;
   top: 12px;
   left: 12px;
@@ -282,7 +162,8 @@ body {
   border-radius: 12px;
 
   border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(0, 0, 0, 0.55);
+  /* background: rgba(0, 0, 0, 0.55); */
+  background: var(--app-bg);
   color: #fff;
 
   font: inherit;
@@ -296,21 +177,55 @@ body {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  /* box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); */
   transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
 }
 
-.theme-toggle:hover {
-  background: rgba(0, 0, 0, 0.68);
-  border-color: rgba(255, 255, 255, 0.28);
-  transform: translateY(-1px);
+
+
+
+
+
+#timerDisplay {
+  position: fixed;
+  bottom: 6vh;
+  left: 50%;
+  transform: translateX(-50%);
+
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-weight: 800;
+  font-size: clamp(48px, 12vw, 160px);
+  letter-spacing: 0.04em;
+
+  /* Optional background panel */
+  /* background: rgba(0, 0, 0, 0.35); */
+  backdrop-filter: blur(6px);
+
+  padding: 0.25em 0.6em;
+  border-radius: 18px;
+
+  color: var(--app-text);
+  text-align: center;
+  line-height: 1;
+
+  pointer-events: none; /* doesn’t block clicks */
+  user-select: none;
+
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
-.theme-toggle:active {
-  transform: translateY(0px);
+.timer-urgent {
+  color: #821812 !important;
+  /* color: #ff3b30 !important; */
+  animation: pulse 1s infinite;
+
+  /* Subtle glow for readability on any background */
+  /* text-shadow:
+  0 0 12px rgba(0,0,0,0.5),
+  0 0 24px rgba(0,0,0,0.35); */
 }
 
-.theme-toggle:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.65);
-  outline-offset: 2px;
+@keyframes pulse {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.05); }
 }

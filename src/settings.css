@@ -1,0 +1,172 @@
+/* src/settings.css */
+/* Clean, modern "control panel" look for a small Tauri settings window */
+
+:root {
+    --panel-bg: rgba(255, 255, 255, 0.06);
+    --panel-border: rgba(255, 255, 255, 0.12);
+    --text: rgba(255, 255, 255, 0.92);
+    --muted: rgba(255, 255, 255, 0.64);
+    --shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+    --radius: 14px;
+    --radius-sm: 10px;
+    --ring: rgba(255, 255, 255, 0.18);
+  }
+  
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  
+  body {
+    margin: 0;
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    letter-spacing: 0.2px;
+  
+    /* Subtle dark gradient background */
+    background:
+      radial-gradient(1000px 600px at 20% 0%, rgba(0, 142, 170, 0.22), transparent 55%),
+      radial-gradient(900px 500px at 90% 10%, rgba(255, 195, 0, 0.16), transparent 55%),
+      linear-gradient(180deg, rgba(18, 18, 22, 1), rgba(10, 10, 12, 1));
+  }
+  
+  .settings-wrap {
+    padding: 14px;
+    display: grid;
+    gap: 12px;
+  }
+  
+  .settings-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 12px;
+    backdrop-filter: blur(10px);
+  }
+  
+  .settings-card h2 {
+    margin: 0 0 10px 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  
+  .theme-label {
+    display: grid;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  
+  /* Shared input styles */
+  .theme-select,
+  input[type="number"] {
+    width: 100%;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.28);
+    color: rgba(255, 255, 255, 0.92);
+    padding: 9px 10px;
+    outline: none;
+    transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+  }
+  
+  .theme-select:hover,
+  input[type="number"]:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(0, 0, 0, 0.32);
+  }
+  
+  .theme-select:focus,
+  input[type="number"]:focus {
+    border-color: rgba(255, 255, 255, 0.28);
+    box-shadow: 0 0 0 4px var(--ring);
+  }
+  
+  /* Buttons */
+  .theme-btn {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.92);
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 650;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 90ms ease, background 140ms ease, border-color 140ms ease;
+  }
+  
+  .theme-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+  
+  .theme-btn:active {
+    transform: translateY(1px);
+  }
+  
+  .theme-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px var(--ring);
+  }
+  
+  /* Timer layout */
+  #timerInputs {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.10);
+  }
+  
+  .timer-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+  }
+  
+  .timer-buttons .theme-btn {
+    width: 100%;
+    padding: 9px 10px;
+    font-size: 12.5px;
+  }
+  
+  /* Make Start feel "primary" without using loud colors */
+  #timerStart {
+    background: rgba(0, 142, 170, 0.18);
+    border-color: rgba(0, 142, 170, 0.22);
+  }
+  
+  #timerStart:hover {
+    background: rgba(0, 142, 170, 0.24);
+    border-color: rgba(0, 142, 170, 0.30);
+  }
+  
+  /* Pause + Reset subtle */
+  #timerPause {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  
+  #timerReset {
+    background: rgba(255, 195, 0, 0.12);
+    border-color: rgba(255, 195, 0, 0.18);
+  }
+  
+  #timerReset:hover {
+    background: rgba(255, 195, 0, 0.16);
+    border-color: rgba(255, 195, 0, 0.24);
+  }
+  
+  /* Better hidden behavior */
+  [hidden] { display: none !important; }
+  
+  /* Optional: tighten spacing if your window is very small */
+  @media (max-height: 420px) {
+    .settings-wrap { padding: 10px; gap: 10px; }
+    .settings-card { padding: 10px; }
+    .theme-label { margin-bottom: 8px; }
+  }
+  
