@@ -61,8 +61,44 @@ jobs:
           choco install wixtoolset -y
           choco install nsis -y
 
+      - name: Import Developer ID certificate (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          MACOS_CERT_P12_BASE64: ${{ secrets.MACOS_CERT_P12_BASE64 }}
+          MACOS_CERT_P12_PASSWORD: ${{ secrets.MACOS_CERT_P12_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          CERT_PATH="$RUNNER_TEMP/developer_id.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+
+          # Write p12 to disk
+          echo "$MACOS_CERT_P12_BASE64" | base64 --decode > "$CERT_PATH"
+
+          # Create + unlock a temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Make it the default for this job
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+          security default-keychain -s "$KEYCHAIN_PATH"
+
+          # Import cert
+          security import "$CERT_PATH" -k "$KEYCHAIN_PATH" -P "$MACOS_CERT_P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+
+          # Allow codesign to use the key without UI prompts
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Debug: show identities
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+
       - name: Add macOS Rust targets (universal)
         if: runner.os == 'macOS'
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: |
           rustup target add aarch64-apple-darwin x86_64-apple-darwin
 
