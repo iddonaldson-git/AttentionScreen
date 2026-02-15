@@ -1,6 +1,7 @@
 // src/settings.ts
 import { emit } from "@tauri-apps/api/event";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
+import "./settings.css";
 
 type AppSettings = {
   bg: string;
