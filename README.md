@@ -105,7 +105,14 @@ Optional countdown tools:
 
 ### Proctor Control Panel
 
-![Proctor Control](docs/screenshots/control.png)
+<!-- ![Proctor Control](docs/screenshots/control.png) -->
+<p align="center">
+  <a href="docs/screenshots/control.png">
+    <img src="docs/screenshots/control.png"
+         alt="Proctor Control"
+         height="900">
+  </a>
+</p>
 
 ### Student View — Message Mode
 
@@ -123,7 +130,7 @@ Optional countdown tools:
 
 Download the latest version from the Releases page:
 
-👉 https://github.com/your-username/attention-control/releases
+👉 https://github.com/iddonaldson-git/AttentionScreen/releases
 
 #### macOS
 

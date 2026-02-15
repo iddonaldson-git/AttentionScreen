@@ -113,7 +113,7 @@
     min-height: 0;
   
     /* cap the overall settings UI height */
-    max-height: 900px;
+    max-height: 760px;
   
     /* IMPORTANT: wrapper itself should NOT scroll */
     overflow: hidden;
