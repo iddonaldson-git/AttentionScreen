@@ -17,7 +17,7 @@
   --pcc-purple: #3D2B57;
   --pcc-apple-green: #A8AD00;
   --pcc-seafoam-green: #ADC8B8;
-  --pcc-tan: #8A837A;
+  --pcc-dark-tan: #8A837A;
   --pcc-light-tan: #C3BEB5;
 
   /* Tertiary Palette */
@@ -47,6 +47,23 @@ body {
   overflow: hidden;
 }
 
+body.mode-blank #display {
+  opacity: 0;
+}
+
+body.mode-message #display {
+  opacity: 1;
+}
+
+body.mode-flash {
+  animation: flash 0.25s ease-in-out 0s 6 alternate;
+}
+
+@keyframes flash {
+  from { filter: invert(0); }
+  to   { filter: invert(1); }
+}
+
 /* Layout */
 .wrap {
   height: 100%;
@@ -68,7 +85,29 @@ body {
   text-align: center;
 }
 
-#msg-primary {
+
+.title {
+  font-size: clamp(48px, 10vw, 120px);
+  font-weight: 800;
+  line-height: 1.05;
+  text-align: center;
+}
+
+.subtitle {
+  margin-top: 14px;
+  font-size: clamp(32px, 6vw, 72px);
+  font-weight: 650;
+  opacity: 0.92;
+  text-align: center;
+}
+.subtitle {
+  color: var(--subtitle-color, white);
+}
+#subtitleText,
+.subtitle {
+  color: var(--subtitle-color, var(--app-text));
+}
+/* #titleDisplay {
   font-size: clamp(48px, 10vw, 120px);
   font-weight: 900;
   line-height: 1.05;
@@ -76,13 +115,13 @@ body {
   outline: none;
 }
 
-#msg-secondary {
+#subtitleDisplay {
   font-size: clamp(32px, 6vw, 72px);
   font-weight: 700;
   color: white;
   opacity: 0.95;
   outline: none;
-}
+} */
 
 /* Drag strip */
 #dragbar {

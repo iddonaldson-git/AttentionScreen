@@ -3,58 +3,250 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Settings</title>
+    <title>Attention Control</title>
     <link rel="stylesheet" href="/src/settings.css" />
     <script type="module" src="/src/settings.ts"></script>
   </head>
   <body>
+    <div class="drag-region" data-tauri-drag-region>
+      <div class="window-title" data-tauri-drag-region>Attention Control</div>
+    </div>
+    
     <div class="settings-wrap">
-      <!-- <h1>Settings</h1> -->
-
-      <section class="settings-card">
-        <h2>Theme</h2>
-        <label class="theme-label">
-          Background
-          <select id="bgSelect" class="theme-select"></select>
-        </label>
-
-        <label class="theme-label">
-          Text
-          <select id="textSelect" class="theme-select"></select>
-        </label>
-
-        <button id="swapBtn" class="theme-btn" type="button">Swap</button>
-      </section>
-
-      <section class="settings-card">
-        <h2>Timer</h2>
-
-        <label class="theme-label">
-          Mode
-          <select id="timerMode" class="theme-select">
-            <option value="off">Off</option>
-            <option value="countdown">Countdown</option>
-          </select>
-        </label>
-
-        <div id="timerInputs" hidden>
-          <label class="theme-label">
-            Minutes
-            <input id="timerMin" type="number" min="0" value="5" />
-          </label>
-
-          <label class="theme-label">
-            Seconds
-            <input id="timerSec" type="number" min="0" max="59" value="0" />
-          </label>
-
-          <div class="timer-buttons">
-            <button id="timerStart" class="theme-btn" type="button">Start</button>
-            <button id="timerPause" class="theme-btn" type="button">Pause</button>
-            <button id="timerReset" class="theme-btn" type="button">Reset</button>
+      <div class="settings-scroll">
+       
+        <!-- Operations -->
+        <section class="settings-card ops-card">
+          <div class="ops-top">
+            <div class="ops-pill">
+              <span class="ops-pill-title">Operations</span>
+              <span class="ops-pill-sep"></span>
+              <span class="ops-pill-dot" id="opsDot" aria-hidden="true"></span>
+              <span class="ops-pill-status" id="opsStatus">Live</span>
+            </div>
           </div>
-        </div>
-      </section>
+        
+          <div class="ops-actions">
+            <button id="btnShow" class="theme-btn ops-btn ops-btn--primary" type="button">Show Attention</button>
+            <button id="btnBlank" class="theme-btn ops-btn ops-btn--ghost" type="button">Blank Screen</button>
+            <button id="btnFlash" class="theme-btn ops-btn ops-btn--warn" type="button">Flash</button>
+          </div>
+        </section>
+        
+
+        <!-- Theme Section -->
+        <section class="settings-card collapsible-card" data-section="theme">
+          <button class="card-header" type="button" aria-expanded="true">
+            <span class="card-title">Theme</span>
+            <span class="chev" aria-hidden="true">›</span>
+          </button>
+        
+          <div class="card-body">
+            <label class="theme-label">
+              Background
+              <div class="select-wrap">
+                <div class="cselect">
+                  <div class="select-wrap" data-select="#bgSelect">
+                    <select id="bgSelect" class="theme-select"></select>
+                  </div>
+                </div>
+              </div>
+              <!-- <select id="bgSelect" class="theme-select"></select> -->
+            </label>
+        
+            <button id="swapBtn" class="theme-btn" type="button">Swap</button>
+          </div>
+        </section>
+
+        <!-- <section class="settings-card">
+          <h2>Theme</h2>
+          <label class="theme-label">
+            Background
+            <select id="bgSelect" class="theme-select"></select>
+          </label>
+          <button id="swapBtn" class="theme-btn" type="button">Swap</button>
+        </section>
+        -->
+        <!-- Title Section -->
+        <section class="settings-card collapsible-card" data-section="title">
+          <button class="card-header" type="button" aria-expanded="true">
+            <span class="card-title">Title</span>
+            <span class="chev" aria-hidden="true">›</span>
+          </button>
+        
+          <div class="card-body">
+            <label class="theme-label">
+              <input id="titleInput" class="theme-input" type="text" placeholder="Enter title…" />
+            </label>
+        
+            <label class="theme-label">
+              Text color
+              <select id="textSelect" class="theme-select"></select>
+            </label>
+          </div>
+        </section>
+
+        <!-- <div class="settings-card">
+          <h2>Title</h2>
+        
+          <label class="theme-label">
+            <input id="titleInput" class="theme-input" type="text" />
+          </label>
+        
+          <label class="theme-label">
+            Text color
+            <select id="textSelect" class="theme-select"></select>
+          </label>
+        </div> -->
+
+        <!-- <div class="panel">
+          <div class="row">
+            <label for="titleInput">Title</label>
+            <input id="titleInput" type="text" placeholder="Enter title…" />
+          </div>
+          <div class="row">
+            <select id="textSelect" class="theme-select"></select>
+          </div>
+        </div> -->
+
+        <!-- Subtitle Section -->
+        <section class="settings-card collapsible-card" data-section="subtitle">
+          <button class="card-header" type="button" aria-expanded="true">
+            <span class="card-title">Subtitle</span>
+            <span class="chev" aria-hidden="true">›</span>
+          </button>
+        
+          <div class="card-body">
+            <label class="theme-label">
+              <input
+                id="subtitleInput"
+                class="theme-input"
+                type="text"
+                placeholder="Enter custom message…"
+              />
+            </label>
+
+            
+        
+            <div class="quick-label">Quick messages</div>
+        
+            <div class="quick-grid">
+              <button class="quick-btn" data-sub="CHECK YOUR ZOOM CHAT" type="button">CHAT</button>
+              <button class="quick-btn" data-sub="TURN ON YOUR CAMERA" type="button">CAMERA</button>
+        
+              <button class="quick-btn" data-sub="UNMUTE YOUR MICROPHONE" type="button">UNMUTE</button>
+              <button class="quick-btn" data-sub="RAISE YOUR HAND" type="button">HAND</button>
+        
+              <button class="quick-btn" data-sub="YOU MAY BEGIN" type="button">BEGIN</button>
+              <button class="quick-btn" data-sub="ONE MOMENT PLEASE" type="button">WAIT</button>
+            </div>
+
+            <label class="theme-label">
+              Text color
+              <select id="subtitleColor" class="theme-select"></select>
+            </label>
+          </div>
+        </section>
+
+
+        <!-- <div class="settings-card">
+          <h2>Subtitle</h2>
+        
+          <! -- Editable text -- >
+          <label class="theme-label">
+            <input
+              id="subtitleInput"
+              class="theme-input"
+              type="text"
+              placeholder="Enter custom message…"
+            />
+          </label>
+        
+          <div class="quick-label">Quick messages</div>
+        
+          <div class="quick-grid">
+            <button class="quick-btn" data-sub="CHECK YOUR ZOOM CHAT">CHAT</button>
+            <button class="quick-btn" data-sub="TURN ON YOUR CAMERA">CAMERA</button>
+        
+            <button class="quick-btn" data-sub="UNMUTE YOUR MICROPHONE">UNMUTE</button>
+            <button class="quick-btn" data-sub="RAISE YOUR HAND">HAND</button>
+        
+            <button class="quick-btn" data-sub="YOU MAY BEGIN">BEGIN</button>
+            <button class="quick-btn" data-sub="ONE MOMENT PLEASE">WAIT</button>
+          </div>
+        </div> -->
+
+        <!-- <div class="panel">
+          <div class="row">
+            <label for="subtitleInput">Subtitle</label>
+            <input id="subtitleInput" type="text" placeholder="Enter subtitle…" />
+      
+            <div class="choices" aria-label="Subtitle quick choices">
+              <button type="button" data-sub="CHECK YOUR ZOOM CHAT">CHECK YOUR ZOOM CHAT</button>
+              <button type="button" data-sub="TURN ON YOUR CAMERA">TURN ON YOUR CAMERA</button>
+      
+              <select id="subtitleSelect" aria-label="More subtitle choices">
+                <option value="">More choices…</option>
+                <option>UNMUTE YOUR MICROPHONE</option>
+                <option>RAISE YOUR HAND IF YOU NEED HELP</option>
+                <option>YOU MAY BEGIN</option>
+                <option>ONE MOMENT PLEASE</option>
+              </select>
+      
+              <button type="button" id="clearSubtitle">Clear subtitle</button>
+            </div>
+          </div>
+      
+          <! -- <div class="preview" aria-live="polite">
+            <h1 id="titlePreview">Your Title</h1>
+            <h2 id="subtitlePreview">Your Subtitle</h2>
+          </div> -- >
+        </div> -->
+
+
+        
+
+        <section class="settings-card collapsible-card" data-section="timer">
+          <button class="card-header" type="button" aria-expanded="true">
+            <span class="card-title">Timer</span>
+            <span class="chev" aria-hidden="true">›</span>
+          </button>
+        
+          <div class="card-body">
+            <!-- existing Timer content goes here -->
+            <label class="theme-label">
+              Mode
+              <select id="timerMode" class="theme-select">
+                <option value="off">Off</option>
+                <option value="countdown">Countdown</option>
+              </select>
+            </label>
+        
+       
+              <div id="timerInputs">
+                <label class="theme-label">
+                  Minutes
+                  <input id="timerMin" type="number" min="0" value="5" />
+                </label>
+      
+                <label class="theme-label">
+                  Seconds
+                  <input id="timerSec" type="number" min="0" max="59" value="0" />
+                </label>
+      
+                <div class="timer-buttons">
+                  <button id="timerStart" class="theme-btn" type="button">Start</button>
+                  <button id="timerPause" class="theme-btn" type="button">Pause</button>
+                  <button id="timerReset" class="theme-btn" type="button">Reset</button>
+                </div>
+              </div>
+          
+          </div>
+        </section>
+
+
+      
+      </div>
     </div>
   </body>
 </html>

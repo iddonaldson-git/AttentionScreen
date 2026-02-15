@@ -15,78 +15,230 @@
   * { box-sizing: border-box; }
   html, body { height: 100%; }
   
-  body {
-    margin: 0;
-    color: var(--text);
-    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-    letter-spacing: 0.2px;
-  
-    /* Subtle dark gradient background */
+  html {
     background:
       radial-gradient(1000px 600px at 20% 0%, rgba(0, 142, 170, 0.22), transparent 55%),
       radial-gradient(900px 500px at 90% 10%, rgba(255, 195, 0, 0.16), transparent 55%),
       linear-gradient(180deg, rgba(18, 18, 22, 1), rgba(10, 10, 12, 1));
+    background-attachment: fixed; /* keeps it stable */
   }
   
-  .settings-wrap {
+  body {
+    margin: 0;
+    min-height: 100%;
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    letter-spacing: 0.2px;
+  
+    /* IMPORTANT: body should not be the scroller */
+    overflow: hidden;
+  
+    /* Let the fixed background show through */
+    background: transparent;
+  
+    /* Default: non-draggable. We'll opt-in specific regions. */
+    -webkit-app-region: no-drag;
+  }
+  
+  /* Interactive controls must never be drag */
+  button, input, select, textarea, a {
+    -webkit-app-region: no-drag;
+  }
+  
+
+/* ------------------------------------------------------------
+   Titlebar / drag region (single source of truth)
+   ------------------------------------------------------------ */
+
+.titlebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+  
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    -webkit-app-region: drag;
+    user-select: none;
+  
+    color: rgba(255,255,255,0.9);
+    font-weight: 650;
+    font-size: 15px;
+  
+    background: rgba(0,0,0,0.08); /* subtle tint so it reads like a bar */
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.window-title {
+    pointer-events: none;
+    user-select: none;
+    font-weight: 650;
+    font-size: 15px;
+    color: rgba(255,255,255,0.9);
+}
+
+/* The draggable strip */
+.drag-region {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 30px; /* give it enough room under traffic lights */
+    z-index: 9999;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    -webkit-app-region: drag;
+    pointer-events: auto;
+  
+    background: transparent;
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Content wrapper: grows with content, but never taller than 900px */
+.settings-wrap {
+    
+    padding-top: 30px; /* below the drag bar */
+    display: grid;
+    gap: 12px;
+  
+    /* key: allow the wrapper to shrink inside a constrained height */
+    min-height: 0;
+  
+    /* cap the overall settings UI height */
+    max-height: 900px;
+  
+    /* IMPORTANT: wrapper itself should NOT scroll */
+    overflow: hidden;
+  
+    -webkit-app-region: no-drag;
+
+    grid-template-rows: 1fr;
+  }
+  
+  /* Inner scroller: only scrolls when needed */
+  .settings-scroll {
     padding: 14px;
     display: grid;
     gap: 12px;
-  }
   
-  .settings-card {
+    /* key: this allows overflow to actually work inside grid */
+    min-height: 0;
+  
+    overflow-y: auto;
+    overflow-x: hidden;
+  
+    /* optional, feels nicer */
+    -webkit-overflow-scrolling: touch;
+  }
+
+
+/* ------------------------------------------------------------
+   Inputs / selects
+   ------------------------------------------------------------ */
+
+.theme-select,
+input[type="number"],
+.theme-input,
+input[type="text"] {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.28);
+  color: rgba(255, 255, 255, 0.92);
+  padding: 9px 10px;
+  outline: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+
+.theme-select {
+    appearance: none;
+    -webkit-appearance: none;
+    /* cursor: pointer; */
+    padding-right: 36px;
+    /* margin-left: 12px; */
+    background:
+        rgba(0,0,0,0.28)
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='white'><path d='M5.5 7l4.5 5 4.5-5z'/></svg>")
+        no-repeat right 10px center / 12px;
+}
+
+.theme-select:hover,
+input[type="number"]:hover,
+.theme-input:hover,
+input[type="text"]:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  /* background: rgba(0, 0, 0, 0.32); */
+}
+
+/* Default focus behavior for inputs */
+input[type="number"]:focus,
+.theme-input:focus,
+input[type="text"]:focus {
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: inset 0 0 0 2px var(--ring);
+}
+
+/* You wanted NO visual change on select focus */
+.theme-select:focus,
+.theme-select:focus-visible,
+.theme-select:active {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  background-color: rgba(0, 0, 0, 0.28) !important;
+}
+
+.theme-select::-webkit-focus-inner { border: 0; }
+
+
+/* ------------------------------------------------------------
+   Cards / layout
+   ------------------------------------------------------------ */
+
+.settings-card {
     background: var(--panel-bg);
     border: 1px solid var(--panel-border);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     padding: 12px;
     backdrop-filter: blur(10px);
-  }
+    transition: transform 160ms ease, opacity 160ms ease;
+}
   
-  .settings-card h2 {
+.settings-card h2 {
     margin: 0 0 10px 0;
     font-size: 13px;
     font-weight: 700;
     color: rgba(255, 255, 255, 0.9);
     text-transform: uppercase;
     letter-spacing: 0.12em;
-  }
+}
   
-  .theme-label {
+.theme-label {
     display: grid;
     gap: 6px;
     font-size: 12px;
     color: var(--muted);
     margin-bottom: 10px;
-  }
+}
   
-  /* Shared input styles */
-  .theme-select,
-  input[type="number"] {
-    width: 100%;
-    border-radius: var(--radius-sm);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(0, 0, 0, 0.28);
-    color: rgba(255, 255, 255, 0.92);
-    padding: 9px 10px;
-    outline: none;
-    transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
-  }
+/* Better hidden behavior */
+[hidden] { display: none !important; }
   
-  .theme-select:hover,
-  input[type="number"]:hover {
-    border-color: rgba(255, 255, 255, 0.18);
-    background: rgba(0, 0, 0, 0.32);
-  }
   
-  .theme-select:focus,
-  input[type="number"]:focus {
-    border-color: rgba(255, 255, 255, 0.28);
-    box-shadow: 0 0 0 4px var(--ring);
-  }
-  
-  /* Buttons */
-  .theme-btn {
+/* ------------------------------------------------------------
+   Buttons
+   ------------------------------------------------------------ */
+
+.theme-btn {
     width: 100%;
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.14);
@@ -98,75 +250,522 @@
     cursor: pointer;
     user-select: none;
     transition: transform 90ms ease, background 140ms ease, border-color 140ms ease;
-  }
+}
   
-  .theme-btn:hover {
+.theme-btn:hover {
     background: rgba(255, 255, 255, 0.12);
     border-color: rgba(255, 255, 255, 0.18);
-  }
+}
   
-  .theme-btn:active {
-    transform: translateY(1px);
-  }
+.theme-btn:active { transform: translateY(1px); }
   
-  .theme-btn:focus-visible {
+.theme-btn:focus-visible {
     outline: none;
     box-shadow: 0 0 0 4px var(--ring);
-  }
+}
   
-  /* Timer layout */
-  #timerInputs {
+/* Subtitle quick pick buttons layout */
+.choice-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 10px;
+}
+  
+/* Quick-pick buttons not forced full-width like Swap */
+.choice-grid .theme-btn {
+    width: auto;
+    justify-self: start;
+    padding: 10px 14px;
+    border-radius: 999px;
+}
+  
+@media (min-width: 340px) {
+    .choice-grid { grid-template-columns: 1fr 1fr; }
+    .choice-grid .theme-btn {
+        justify-self: stretch;
+        text-align: center;
+    }
+}
+  
+
+/* ------------------------------------------------------------
+   Timer layout
+   ------------------------------------------------------------ */
+
+#timerInputs {
     margin-top: 10px;
     padding-top: 10px;
     border-top: 1px solid rgba(255, 255, 255, 0.10);
-  }
+}
   
-  .timer-buttons {
+.timer-buttons {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;
     margin-top: 10px;
-  }
+}
   
-  .timer-buttons .theme-btn {
+.timer-buttons .theme-btn {
     width: 100%;
     padding: 9px 10px;
     font-size: 12.5px;
-  }
+}
   
-  /* Make Start feel "primary" without using loud colors */
-  #timerStart {
+/* Make Start feel "primary" without loud colors */
+#timerStart {
     background: rgba(0, 142, 170, 0.18);
     border-color: rgba(0, 142, 170, 0.22);
-  }
-  
-  #timerStart:hover {
+}
+#timerStart:hover {
     background: rgba(0, 142, 170, 0.24);
     border-color: rgba(0, 142, 170, 0.30);
-  }
+}
   
-  /* Pause + Reset subtle */
-  #timerPause {
-    background: rgba(255, 255, 255, 0.06);
-  }
+/* Pause + Reset subtle */
+#timerPause { background: rgba(255, 255, 255, 0.06); }
   
   #timerReset {
     background: rgba(255, 195, 0, 0.12);
     border-color: rgba(255, 195, 0, 0.18);
   }
-  
   #timerReset:hover {
     background: rgba(255, 195, 0, 0.16);
     border-color: rgba(255, 195, 0, 0.24);
   }
+
+
+/* ------------------------------------------------------------
+   Quick Messages
+   ------------------------------------------------------------ */
+
+.quick-label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 12px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
   
-  /* Better hidden behavior */
-  [hidden] { display: none !important; }
+.quick-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
   
-  /* Optional: tighten spacing if your window is very small */
-  @media (max-height: 420px) {
-    .settings-wrap { padding: 10px; gap: 10px; }
-    .settings-card { padding: 10px; }
-    .theme-label { margin-bottom: 8px; }
+.quick-btn {
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.92);
+  
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 650;
+    text-align: center;
+  
+    cursor: pointer;
+    user-select: none;
+  
+    transition: transform 90ms ease, background 140ms ease, border-color 140ms ease;
+}
+  
+.quick-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.22);
+}
+  
+.quick-btn.active {
+    transform: scale(0.98);
+    background: rgba(0, 142, 170, 0.22);
+    border-color: rgba(0, 142, 170, 0.42);
+}
+  
+.quick-btn:focus,
+.quick-btn:focus-visible {
+    outline: none;
+    box-shadow: none;
+}
+  
+
+/* ------------------------------------------------------------
+   Collapsible cards
+   ------------------------------------------------------------ */
+
+.collapsible { overflow: hidden; transition: height 180ms ease; }
+
+.collapsible-card .card-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0 0 10px 0;
+
+  cursor: pointer;
+  color: inherit;
+}
+
+.collapsible-card .card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+/* Simple chevron that rotates */
+.collapsible-card .chev {
+  display: inline-block;
+  transform: rotate(90deg);
+  opacity: 0.75;
+  transition: transform 160ms ease, opacity 160ms ease;
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Animated height container (height set by JS for smooth animation) */
+.collapsible-card .card-body {
+  overflow: hidden;
+  height: auto;
+  transition: height 180ms ease;
+}
+
+/* Collapsed state */
+.collapsible-card.is-collapsed { padding-bottom: 0; }
+.collapsible-card.is-collapsed .chev {
+  transform: rotate(0deg);
+  opacity: 0.55;
+}
+.collapsible-card.is-collapsed .card-body { height: 0; }
+
+/* Remove focus ring on header click */
+.card-header:focus,
+.card-header:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Wrap provides positioning context */
+.select-wrap,
+.cselect {
+  position: relative;
+}
+
+/* Hide the native select completely (keep it for state + change events) */
+.select-wrap > select.theme-select,
+.cselect > select.theme-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+
+  opacity: 0;
+  pointer-events: none;
+
+  /* IMPORTANT: prevent it from contributing layout/painting */
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  background: transparent;
+}
+  /* Custom select button */
+  .cselect {
+    position: relative;
   }
   
+  .cselect-btn {
+    width: 100%;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.28);
+    color: rgba(255, 255, 255, 0.92);
+    padding: 9px 36px 9px 10px; /* right padding for arrow */
+    text-align: left;
+    cursor: pointer;
+    user-select: none;
+    font: inherit;
+    transition: border-color 120ms ease, background 120ms ease;
+  }
+  
+  .cselect-btn:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+  
+  .cselect-btn:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--ring);
+  }
+  
+  /* Arrow */
+  .cselect-btn::after {
+    content: "";
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    width: 12px;
+    height: 12px;
+    transform: translateY(-50%);
+    background:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='white'><path d='M5.5 7l4.5 5 4.5-5z'/></svg>")
+      no-repeat center / 12px 12px;
+    opacity: 0.9;
+  }
+  
+  /* Menu */
+  .cselect-menu {
+    position: absolute;
+    left: 0;
+    right: 0;
+    margin-top: 6px;
+    z-index: 99999;
+  
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(10, 10, 12, 0.95);
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
+  
+    max-height: 240px;
+    overflow: auto;
+    padding: 6px;
+  
+    display: none;
+  }
+  
+  .cselect.open .cselect-menu {
+    display: block;
+  }
+  
+ /* Portal menu: macOS-ish dark popover */
+.cselect-portal {
+    position: fixed;
+    z-index: 2147483647;
+    width: 240px; /* JS will override to button width */
+    padding: 6px;
+  
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(28, 28, 30, 0.96); /* macOS dark popover vibe */
+  
+    box-shadow:
+      0 18px 45px rgba(0,0,0,0.55),
+      0 0 0 0.5px rgba(255,255,255,0.10);
+  
+    backdrop-filter: none;            /* keep reliable */
+    -webkit-backdrop-filter: none;    /* keep reliable */
+  
+    max-height: 280px;
+    overflow: auto;
+  
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    font-size: 14px;
+  }
+  
+  /* Option rows */
+  .cselect-option {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: rgba(255,255,255,0.92);
+  
+    padding: 8px 10px 8px 28px; /* left room for checkmark */
+    border-radius: 8px;
+  
+    text-align: left;
+    cursor: default;            /* native menu vibe */
+    user-select: none;
+  
+    line-height: 1.2;
+    position: relative;
+  }
+  
+  /* Hover: subtle */
+  .cselect-option:hover {
+    background: rgba(255,255,255,0.08);
+  }
+  
+  /* Selected: checkmark on the left, no pill highlight */
+  .cselect-option[aria-selected="true"] {
+    background: rgba(255,255,255,0.06);
+  }
+  
+  /* Checkmark */
+  .cselect-option[aria-selected="true"]::before {
+    content: "✓";
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    opacity: 0.9;
+  }
+  
+  /* Remove default button focus rings inside menu */
+  .cselect-option:focus,
+  .cselect-option:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+  
+  
+
+
+
+
+/* --- Operations Card --- */
+.ops-card {
+    padding: 14px;
+  }
+  
+  .ops-top {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin-bottom: 12px;
+  }
+  
+  /* Compact status pill */
+  .ops-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.20);
+    backdrop-filter: blur(10px);
+  }
+  
+  .ops-pill-title {
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.85);
+  }
+  
+  .ops-pill-sep {
+    width: 1px;
+    height: 14px;
+    background: rgba(255,255,255,0.14);
+    margin: 0 2px;
+  }
+  
+  .ops-pill-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.45);
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.08);
+  }
+  
+  /* Status text */
+  .ops-pill-status {
+    font-size: 12px;
+    font-weight: 650;
+    color: rgba(255,255,255,0.80);
+  }
+  
+  /* Status states (toggle class on .ops-pill or set on dot) */
+  .ops-pill.is-live .ops-pill-dot { background: rgba(0, 220, 120, 0.95); }
+  .ops-pill.is-blank .ops-pill-dot { background: rgba(255,255,255,0.55); }
+  .ops-pill.is-flash .ops-pill-dot { background: rgba(255, 195, 0, 0.98); }
+  
+  .ops-actions {
+    display: grid;
+    gap: 12px;
+  }
+  
+  /* Make ops buttons feel more "control panel" */
+  .ops-btn {
+    padding: 14px 14px;
+    font-size: 16px;
+    font-weight: 750;
+    border-radius: 16px;
+    letter-spacing: 0.2px;
+  }
+  
+  /* Variants that still match your theme */
+  .ops-btn--primary {
+    background: rgba(0, 142, 170, 0.18);
+    border-color: rgba(0, 142, 170, 0.26);
+  }
+  .ops-btn--primary:hover {
+    background: rgba(0, 142, 170, 0.24);
+    border-color: rgba(0, 142, 170, 0.34);
+  }
+  
+  .ops-btn--ghost {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.14);
+  }
+  .ops-btn--ghost:hover {
+    background: rgba(255,255,255,0.10);
+    border-color: rgba(255,255,255,0.22);
+  }
+  
+  /* Flash looks "warning" without screaming */
+  .ops-btn--warn {
+    background: rgba(255, 195, 0, 0.10);
+    border-color: rgba(255, 195, 0, 0.18);
+  }
+  .ops-btn--warn:hover {
+    background: rgba(255, 195, 0, 0.14);
+    border-color: rgba(255, 195, 0, 0.26);
+  }
+  
+  /* Optional: active press feels firm */
+  .ops-btn:active {
+    transform: translateY(1px);
+  }
+  
+  .theme-btn:disabled,
+.theme-btn.is-disabled {
+  opacity: 0.45;
+  filter: saturate(0.4) brightness(0.9);
+  cursor: not-allowed;
+
+  /* Remove glow / emphasis */
+  box-shadow: none;
+  border-color: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.7);
+
+  /* Slight inset feel */
+  background: rgba(255,255,255,0.06);
+}

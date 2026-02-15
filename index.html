@@ -8,91 +8,97 @@
     <script type="module" src="/src/main.ts"></script>
   </head>
 
-  <body>
-    <div id="dragbar" data-tauri-drag-region></div>
+  <body class="mode-blank">
+    <main id="display">
+      <div id="dragbar" data-tauri-drag-region></div>
 
-    <!-- <button id="themeToggle" class="theme-toggle" type="button">
-      🎨 Theme
-    </button> -->
+      <!-- <button id="themeToggle" class="theme-toggle" type="button">
+        🎨 Theme
+      </button> -->
 
-    <!-- <button id="timerToggle" class="timer-toggle" type="button">
-      ⏰ Timer
-    </button> -->
+      <!-- <button id="timerToggle" class="timer-toggle" type="button">
+        ⏰ Timer
+      </button> -->
 
 
-    <!-- <div id="debug" style="position:fixed;left:12px;bottom:12px;padding:8px 10px;background:rgba(0,0,0,.6);color:#fff;border-radius:8px;font:12px system-ui;z-index:9999;">
-      debug: ready
-    </div> -->
-    
-    <!-- <button id="settingssBtn" type="button">Settings</button> -->
+      <!-- <div id="debug" style="position:fixed;left:12px;bottom:12px;padding:8px 10px;background:rgba(0,0,0,.6);color:#fff;border-radius:8px;font:12px system-ui;z-index:9999;">
+        debug: ready
+      </div> -->
+      
+      <!-- <button id="settingssBtn" type="button">Settings</button> -->
 
-    <!-- <button id="settingsBtn" class="settingsBtn" type="button">
-      ⚙ Settings
-    </button> -->
+      <!-- <button id="settingsBtn" class="settingsBtn" type="button">
+        ⚙ Settings
+      </button> -->
 
-    <!-- Theme Controls -->
-    <div id="themePanel" class="theme-panel" aria-label="Theme controls" hidden>
-      <label class="theme-label">
-        Background
-        <select id="bgSelect" class="theme-select"></select>
-      </label>
-
-      <label class="theme-label">
-        Text
-        <select id="textSelect" class="theme-select"></select>
-      </label>
-
-      <div class="theme-meta" aria-live="polite">
-        <button id="swapBtn" class="theme-btn" type="button">
-          Swap
-        </button>
-      </div>
-
-      <!-- Timer Controls -->
-      <div class="timer-panel" aria-label="Timer controls">
-        <label class="timer-label">
-          Timer
-          <select id="timerMode" class="theme-select">
-            <option value="off">Off</option>
-            <option value="countdown">Countdown</option>
-          </select>
+      <!-- Theme Controls -->
+      <div id="themePanel" class="theme-panel" aria-label="Theme controls" hidden>
+        <label class="theme-label">
+          Background
+          <select id="bgSelect" class="theme-select"></select>
         </label>
 
-        <div id="timerInputs" class="timer-inputs" hidden>
+        <label class="theme-label">
+          Text
+          <select id="textSelect" class="theme-select"></select>
+        </label>
+
+        <div class="theme-meta" aria-live="polite">
+          <button id="swapBtn" class="theme-btn" type="button">
+            Swap
+          </button>
+        </div>
+
+        <!-- Timer Controls -->
+        <div class="timer-panel" aria-label="Timer controls">
           <label class="timer-label">
-            Minutes
-            <input id="timerMin" class="timer-input" type="number" min="0" max="999" value="5" />
+            Timer
+            <select id="timerMode" class="theme-select">
+              <option value="off">Off</option>
+              <option value="countdown">Countdown</option>
+            </select>
           </label>
 
-          <label class="timer-label">
-            Seconds
-            <input id="timerSec" class="timer-input" type="number" min="0" max="59" value="0" />
-          </label>
+          <div id="timerInputs" class="timer-inputs" hidden>
+            <label class="timer-label">
+              Minutes
+              <input id="timerMin" class="timer-input" type="number" min="0" max="999" value="5" />
+            </label>
 
-          <div class="timer-buttons">
-            <button id="timerStart" class="theme-btn" type="button">Start</button>
-            <button id="timerPause" class="theme-btn" type="button">Pause</button>
-            <button id="timerReset" class="theme-btn" type="button">Reset</button>
-          </div>
-          
-          <div class="timer-presets">
-            <button data-ms="300000">5 min</button>
-            <button data-ms="600000">10 min</button>
-            <button data-ms="900000">15 min</button>
+            <label class="timer-label">
+              Seconds
+              <input id="timerSec" class="timer-input" type="number" min="0" max="59" value="0" />
+            </label>
+
+            <div class="timer-buttons">
+              <button id="timerStart" class="theme-btn" type="button">Start</button>
+              <button id="timerPause" class="theme-btn" type="button">Pause</button>
+              <button id="timerReset" class="theme-btn" type="button">Reset</button>
+            </div>
+            
+            <div class="timer-presets">
+              <button data-ms="300000">5 min</button>
+              <button data-ms="600000">10 min</button>
+              <button data-ms="900000">15 min</button>
+            </div>
           </div>
         </div>
+
       </div>
 
-    </div>
+      <!-- Attention Screen Wrap -->
+      <div class="wrap">
+        <div class="message">
+          <div id="titleDisplay" class="title"></div>
+          <div id="subtitleDisplay" class="subtitle"></div>
 
-    <!-- Attention Screen Wrap -->
-    <div class="wrap">
-      <div class="message">
-        <div id="msg-primary" contenteditable="true" spellcheck="false">Vilma</div>
-        <div id="msg-secondary" contenteditable="true" spellcheck="false">CHECK YOUR ZOOM CHAT</div>
+          <!-- <div id="msg-primary" contenteditable="true" spellcheck="false">Vilma</div> -->
+          <!-- <div id="msg-secondary" contenteditable="true" spellcheck="false">CHECK YOUR ZOOM CHAT</div> -->
+        </div>
+        
       </div>
-      
-    </div>
-    <div id="timerDisplay" class="timer-display" hidden>05:00</div>
+      <div id="timerDisplay" class="timer-display" hidden>05:00</div>
+    </main>
+    
   </body>
 </html>

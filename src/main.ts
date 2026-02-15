@@ -1,4 +1,3 @@
-import { invoke } from "@tauri-apps/api/core";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { listen } from "@tauri-apps/api/event";
 
@@ -7,7 +6,10 @@ import { listen } from "@tauri-apps/api/event";
 ------------------------------ */
 type AppSettings = {
   bg: string;
+  titleText: string;
   text: string;
+  subtitleText: string;
+  subtitleColor: string;
   timerMode: "off" | "countdown";
   timerMin: number;
   timerSec: number;
@@ -41,6 +43,19 @@ function formatTauriError(e: unknown): string {
 ------------------------------ */
 const root = document.documentElement;
 
+function setMode(mode: "blank" | "message") {
+  document.body.classList.remove("mode-blank", "mode-message", "mode-flash");
+  document.body.classList.add(mode === "blank" ? "mode-blank" : "mode-message");
+}
+
+function flash() {
+  document.body.classList.add("mode-flash");
+  setTimeout(() => document.body.classList.remove("mode-flash"), 1800);
+}
+
+listen("attention:setMode", (e) => setMode(e.payload as any));
+listen("attention:flash", () => flash());
+
 function setThemeSlot(slotVar: string, value: string) {
   // Settings sends token keys (ex: "turquoise") OR hex.
   // If you're sending token keys, you'll convert them here.
@@ -59,13 +74,35 @@ function setThemeSlot(slotVar: string, value: string) {
   }
 }
 
+function setTextContent(title: string, subtitle: string) {
+  // Optional: force uppercase, if you want the "attention screen" vibe
+  // title = title.toUpperCase();
+  // subtitle = subtitle.toUpperCase();
+
+  const titleEl =
+    (document.getElementById("titleDisplay") as HTMLElement | null) ??
+    (document.getElementById("mainText") as HTMLElement | null);
+
+  const subtitleEl = document.getElementById("subtitleDisplay") as HTMLElement | null;
+
+  if (titleEl) titleEl.textContent = title;
+
+  if (subtitleEl) {
+    subtitleEl.textContent = subtitle;
+    subtitleEl.toggleAttribute("hidden", subtitle.trim().length === 0);
+  }
+}
+
 /* -----------------------------
    Settings: load + apply + listen
 ------------------------------ */
 function readStoredSettings(): AppSettings {
   return {
     bg: localStorage.getItem("bg") ?? "turquoise",
+    subtitleColor: localStorage.getItem("subtitleColor") ?? "navy",
     text: localStorage.getItem("text") ?? "navy",
+    titleText: localStorage.getItem("titleText") ?? "ATTENTION",
+    subtitleText: localStorage.getItem("subtitleText") ?? "CHECK YOUR ZOOM CHAT",
     timerMode: (localStorage.getItem("timerMode") as AppSettings["timerMode"]) ?? "off",
     timerMin: Number(localStorage.getItem("timerMin") ?? "5"),
     timerSec: Number(localStorage.getItem("timerSec") ?? "0"),
@@ -80,6 +117,9 @@ let configuredDurationMs = 0;
 function applySettings(s: AppSettings) {
   setThemeSlot("--app-bg", s.bg);
   setThemeSlot("--app-text", s.text);
+  setThemeSlot("--subtitle-color", s.subtitleColor);
+
+  setTextContent(s.titleText, s.subtitleText);
 
   const newMode = s.timerMode;
   const newDurationMs =
@@ -121,10 +161,11 @@ export async function openSettingsWindow() {
 
   const win = new WebviewWindow("settings", {
     url: "/settings.html",
-    title: "Settings",
+    title: "",
     width: 320,
-    height: 340,
+    height: 540,
     resizable: true,
+    titleBarStyle: "overlay"
   });
 
   settingsWin = win;
@@ -150,29 +191,6 @@ export async function openSettingsWindow() {
 
 
 
-
-
-
-/* -----------------------------
-   Optional Tauri greet example
------------------------------- */
-let greetInputEl: HTMLInputElement | null = null;
-let greetMsgEl: HTMLElement | null = null;
-
-async function greet() {
-  if (!greetMsgEl || !greetInputEl) return;
-  greetMsgEl.textContent = await invoke<string>("greet", { name: greetInputEl.value });
-}
-
-function initGreetDemo() {
-  greetInputEl = document.querySelector<HTMLInputElement>("#greet-input");
-  greetMsgEl = document.querySelector<HTMLElement>("#greet-msg");
-  const form = document.querySelector<HTMLFormElement>("#greet-form");
-  form?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    void greet();
-  });
-}
 
 /* -----------------------------
    Timer engine (MAIN WINDOW)
@@ -338,9 +356,6 @@ window.addEventListener("DOMContentLoaded", async () => {
 //   console.log("MAIN: got debug:ping", e.payload);
 //   setDebug("Got ping from settings");
 // });
-
-  // If you still want the greet demo
-  initGreetDemo();
 
   // Optional: if you kept timer buttons in the main window, wire them:
   document.getElementById("timerStart")?.addEventListener("click", startCountdown);
