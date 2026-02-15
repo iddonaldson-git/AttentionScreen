@@ -334,6 +334,11 @@ input[type="text"]:focus {
     border-color: rgba(255, 195, 0, 0.24);
   }
 
+  .time-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
 
 /* ------------------------------------------------------------
    Quick Messages

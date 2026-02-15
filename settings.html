@@ -225,15 +225,21 @@
         
        
               <div id="timerInputs">
-                <label class="theme-label">
-                  Minutes
-                  <input id="timerMin" type="number" min="0" value="5" />
-                </label>
-      
-                <label class="theme-label">
-                  Seconds
-                  <input id="timerSec" type="number" min="0" max="59" value="0" />
-                </label>
+                <div class="time-row">
+                  <div class="field">
+                    <label class="theme-label">
+                      Minutes
+                      <input id="timerMin" type="number" min="0" value="30" />
+                    </label>
+                  </div>
+                
+                  <div class="field">
+                    <label class="theme-label">
+                      Seconds
+                      <input id="timerSec" type="number" min="0" max="59" value="0" />
+                    </label>
+                  </div>
+                </div>
       
                 <div class="timer-buttons">
                   <button id="timerStart" class="theme-btn" type="button">Start</button>

@@ -157,8 +157,8 @@ jobs:
         if: runner.os == 'Windows' && env.IS_TAG_BUILD == 'true'
         uses: azure/login@v2
         with:
-          client-id: 446343b8-74b9-4d61-82fa-afae095199bd
-          tenant-id: 049ec3b5-40f7-47b6-ae95-2f7a19c28a28
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Sign MSI (Azure Trusted Signing)
